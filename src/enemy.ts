@@ -10,7 +10,7 @@ export type Enemy = {
   s: Phaser.GameObjects.Image;
 }
 
-export const displayEnemyStats = (enemy: Enemy): string => {
+export const displayEnemyStats = (enemy: Enemy) => {
   const str = `
 resistSleep ${enemy.resistSleep}
 resistFear ${enemy.resistFear}

@@ -3,6 +3,7 @@ import gaspUrl from '../assets/gasp.mp3';
 import playerUrl from '../assets/adam.png';
 import enemyUrl from '../assets/cat.png';
 import { displayEnemyStats, Enemy } from './enemy';
+import { displayPlayerStats, Player } from './player';
 
 export const menuSceneKey = 'MenuScene';
 
@@ -14,19 +15,15 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
     A: Phaser.Input.Keyboard.Key;
     E: Phaser.Input.Keyboard.Key;
   };
-  let sprites: {s: Phaser.GameObjects.Image, r: number }[];
-  let player: {
-    s: Phaser.GameObjects.Image,
-  };
-
 
   let enemy: Enemy;
+  let player: Player;
+  let turnText: Phaser.GameObjects.Text;
+  let yourTurn = true;
 
   return {
     key: menuSceneKey,
     preload() {
-      sprites = [];
-
       if (this.input.keyboard) {
         keys = {
           S: this.input.keyboard.addKey(
@@ -60,13 +57,18 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
       this.load.audio(gaspUrl, gaspUrl);
     },
     create() {
-      this.add.text(0, 0, 'G D A E', {
+      turnText = this.add.text(0, 0, '', {
         fontSize: '60px',
         fontFamily: "Helvetica",
       });
-  
+
       player = {
         s: this.add.image(100, 100, playerUrl),
+        text: this.add.text(120, 120, '', {
+          fontSize: '20px',
+          fontFamily: "Helvetica",
+        }),
+        hp: 40,
       }
 
       enemy = {
@@ -83,35 +85,55 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
       }
 
       displayEnemyStats(enemy);
+      displayPlayerStats(player);
     },
     update() {
+      if (yourTurn) {
+        turnText.text = 'Your turn: G D A E';
+      } else {
+        turnText.text = 'Imma fuck you up!!';
+      }
+
+      if (yourTurn) {
+        let didSomething = false;
+        if (keys.G.isDown) {
+          enemy.resistSleep -= 1;
+          keys.G.isDown = false;
+          didSomething = true;
+        }
+  
+        if (keys.D.isDown) {
+          enemy.resistFear -= 1;
+          keys.D.isDown = false;
+          yourTurn = false;
+        }
+  
+        if (keys.A.isDown) {
+          enemy.resistGroove -= 1;
+          keys.A.isDown = false;
+          yourTurn = false;
+        }
+  
+        if (keys.E.isDown) {
+          enemy.resistConfuse -= 1;
+          keys.E.isDown = false;
+          yourTurn = false;
+        }
+
+        if (didSomething) {
+          displayEnemyStats(enemy);
+          yourTurn = false;
+          setTimeout(() => {
+            player.hp -= 5 + Math.round(Math.random() * 5);
+            yourTurn = true;
+            displayPlayerStats(player);
+          }, 3000);
+        }
+      }
+
       if (keys.S.isDown) {
         this.sound.play(gaspUrl);
         this.scene.start(menuSceneKey);
-      }
-
-      if (keys.G.isDown) {
-        enemy.resistSleep -= 1;
-        keys.G.isDown = false;
-        displayEnemyStats(enemy);
-      }
-
-      if (keys.D.isDown) {
-        enemy.resistFear -= 1;
-        keys.D.isDown = false;
-        displayEnemyStats(enemy);
-      }
-
-      if (keys.A.isDown) {
-        enemy.resistGroove -= 1;
-        keys.A.isDown = false;
-        displayEnemyStats(enemy);
-      }
-
-      if (keys.E.isDown) {
-        enemy.resistConfuse -= 1;
-        keys.E.isDown = false;
-        displayEnemyStats(enemy);
       }
     },
   }
