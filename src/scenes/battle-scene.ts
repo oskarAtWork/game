@@ -1,18 +1,20 @@
 import 'phaser';
-import gaspUrl from '../assets/gasp.mp3';
-import lineUrl from '../assets/line.png';
-import skaningenUrl from '../assets/skaningen.mp3';
-import playerUrl from '../assets/adam.png';
-import sheetUrl from '../assets/sheet.png';
-import noteUrl from '../assets/note.png';
-import enemyUrl from '../assets/cat.png';
-import { displayEnemyStats, Enemy } from './enemy';
-import { displayPlayerStats, Player } from './player';
-import { isAllowed, playNote, skaningen, Song } from './songs';
+import gaspUrl from '../../assets/gasp.mp3';
+import lineUrl from '../../assets/line.png';
+import skaningenUrl from '../../assets/skaningen.mp3';
+import playerUrl from '../../assets/adam.png';
+import sheetUrl from '../../assets/sheet.png';
+import backgroundUrl from '../../assets/background.png';
+import noteUrl from '../../assets/note.png';
+import enemyUrl from '../../assets/uffe.png';
+import { displayEnemyStats, Enemy } from '../enemy';
+import { displayPlayerStats, Player } from '../player';
+import { isAllowed, playNote, skaningen, Song } from '../songs';
+import { createSheet, Sheet } from '../sheet';
 
-export const menuSceneKey = 'MenuScene';
+export const battleSceneKey = 'BattleScene';
 
-export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes.CreateSceneFromObjectConfig {
+export function battle(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes.CreateSceneFromObjectConfig {
   let keys: {
     S: Phaser.Input.Keyboard.Key;
     G: Phaser.Input.Keyboard.Key;
@@ -23,7 +25,7 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
 
   let enemy: Enemy;
   let player: Player;
-  let sheet: Phaser.GameObjects.Image;
+  let sheet: Sheet;
   let line: {
     s: Phaser.GameObjects.Image;
     t: number,
@@ -34,7 +36,7 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
   let yourTurn = true;
 
   return {
-    key: menuSceneKey,
+    key: battleSceneKey,
     preload() {
       if (this.input.keyboard) {
         keys = {
@@ -64,17 +66,25 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
       keys.A.isDown = false;
       keys.E.isDown = false;
 
-      this.load.image(playerUrl, playerUrl);
-      this.load.image(sheetUrl, sheetUrl);
-      this.load.image(enemyUrl, enemyUrl);
-      this.load.image(lineUrl, lineUrl);
-      this.load.image('note', noteUrl);
+      // audio
       this.load.audio(gaspUrl, gaspUrl);
       this.load.audio(skaningenUrl, skaningenUrl);
+
+      // images
+      this.load.image(playerUrl, playerUrl);
+      this.load.image(enemyUrl, enemyUrl);
+      this.load.image(enemyUrl, enemyUrl);
+      this.load.image(lineUrl, lineUrl);
+      this.load.image(backgroundUrl, backgroundUrl);
+      // so that we can easily refer to it in other files easily (level file)
+      this.load.image('note', noteUrl);
+      this.load.image('sheet', sheetUrl);
+
     },
     create() {
-      sheet = this.add.image(200, 20, sheetUrl);
-      sheet.setOrigin(0, 0);
+      this.add.image(0, 0, backgroundUrl).setOrigin(0, 0);
+      sheet = createSheet(this);
+
 
       line = {
         s: this.add.image(300, 20, lineUrl),
@@ -109,8 +119,6 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
           playedNotes.push(
             note
           );
-
-          note.s.setOrigin(0, 0);
         }
 
         if (ev.key.toUpperCase() === 'Q') {
@@ -121,8 +129,8 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
       })
 
       enemy = {
-        s: this.add.image(400, 300, enemyUrl),
-        text: this.add.text(500, 300, '', {
+        s: this.add.image(650, 300, enemyUrl),
+        text: this.add.text(650, 10, '', {
           fontSize: '20px',
           fontFamily: "Helvetica",
         }),
@@ -139,7 +147,8 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
     update() {
       if (song) {
         line.t += 1;
-        line.s.x = (sheet.x) + sheet.displayWidth * ((line.t - song.startsAt) / (song.endsAt - song.startsAt));
+
+        line.s.x = sheet.innerX() + sheet.innerWidth() * ((line.t - song.startsAt) / (song.endsAt - song.startsAt));
 
         if (line.t > song.endsAt) {
           line.s.setVisible(false);
@@ -153,6 +162,7 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
           }
 
           const score = clearNotes(playedNotes);
+          clearSong(song)
           song = undefined;
 
           enemy.resistFear -= 1 + score;
@@ -170,6 +180,7 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
 
       if (enemy.resistFear <= 0) {
         enemy.s.x += 10;
+        enemy.s.flipX = true;
       }
 
       if (yourTurn) {
@@ -195,7 +206,7 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
 
       if (keys.S.isDown) {
         this.sound.play(gaspUrl);
-        this.scene.start(menuSceneKey);
+        this.scene.start(battleSceneKey);
       }
     },
   }
@@ -206,4 +217,8 @@ function clearNotes(playedNotes: {s: Phaser.GameObjects.Image, hit: boolean}[]) 
   playedNotes.forEach((note) => note.s.destroy());
   while (playedNotes.length > 0) playedNotes.pop();
   return count;
+}
+
+function clearSong(song: Song) {
+  song.notes.forEach((note) => note.destroy());
 }
