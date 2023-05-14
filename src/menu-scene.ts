@@ -8,7 +8,7 @@ import noteUrl from '../assets/note.png';
 import enemyUrl from '../assets/cat.png';
 import { displayEnemyStats, Enemy } from './enemy';
 import { displayPlayerStats, Player } from './player';
-import { skaningen, Song } from './songs';
+import { isAllowed, playNote, skaningen, Song } from './songs';
 
 export const menuSceneKey = 'MenuScene';
 
@@ -29,6 +29,7 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
     t: number,
   };
   let song: undefined | Song;
+  let playedNotes: {s: Phaser.GameObjects.Image, hit: boolean}[] = [];
 
   let yourTurn = true;
 
@@ -91,8 +92,27 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
         hp: 40,
       }
 
+      const scene = this;
+
       document.addEventListener('keydown', (ev) => {
         const el = document.getElementById('keypresses') as HTMLElement;
+
+        if (!song) {
+          return;
+        }
+
+        if (isAllowed(ev.key)) {
+          const {x, y, hit} = playNote(line.t, ev.key, song, sheet);
+
+          const note = { s: scene.add.image(x, y, 'note'), hit};
+
+          playedNotes.push(
+            note
+          );
+
+          note.s.setOrigin(0, 0);
+        }
+
         if (ev.key.toUpperCase() === 'Q') {
           el.innerHTML += ',' + line.t;
         } else if (ev.key.toUpperCase() === 'W') {
@@ -107,9 +127,9 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
           fontFamily: "Helvetica",
         }),
         confused: false,
-        resistFear: 2,
-        resistGroove: 3,
-        resistSleep: 4,
+        resistFear: 20,
+        resistGroove: 30,
+        resistSleep: 40,
         hasEarMuffs: false,
       }
 
@@ -117,64 +137,59 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
       displayPlayerStats(player);
     },
     update() {
-      if (song && line.s.visible) {
+      if (song) {
         line.t += 1;
+        line.s.x = (sheet.x) + sheet.displayWidth * ((line.t - song.startsAt) / (song.endsAt - song.startsAt));
+
         if (line.t > song.endsAt) {
           line.s.setVisible(false);
         }
-        line.s.x = (sheet.x) + sheet.displayWidth * ((line.t - song.startsAt) / (song.endsAt - song.startsAt));
+        if (line.t > song.fullEnd) {
+          yourTurn = false;
+
+          if (song.name === 'skaningen') {
+            enemy.resistFear -= 1;
+            displayEnemyStats(enemy);
+          }
+
+          const score = clearNotes(playedNotes);
+          song = undefined;
+
+          enemy.resistFear -= 1 + score;
+          displayPlayerStats(player);
+
+          if (enemy.resistFear >= 0) {
+            setTimeout(() => {
+              player.hp -= 5 + Math.round(Math.random() * 5);
+              yourTurn = true;
+            }, 500);
+          } 
+        }
+
       }
 
       if (enemy.resistFear <= 0) {
-        enemy.s.x += 1;
+        enemy.s.x += 10;
       }
 
       if (yourTurn) {
         let didSomething = false;
-        if (keys.G.isDown) {
-          enemy.resistSleep -= 1;
-          keys.G.isDown = false;
-          didSomething = true;
-        }
-  
+
         if (keys.D.isDown) {
           this.sound.play(skaningenUrl);
-          enemy.resistFear -= 1;
           keys.D.isDown = false;
-          yourTurn = false;
-          didSomething = true;
-        }
-  
-        if (keys.A.isDown) {
-          enemy.resistGroove -= 1;
-          keys.A.isDown = false;
-          yourTurn = false;
-          didSomething = true;
-        }
-  
-        if (keys.E.isDown) {
-          enemy.confused = true;
-          keys.E.isDown = false;
-          yourTurn = false;
-          didSomething = true;
-        }
 
-        if (didSomething) {
-          displayEnemyStats(enemy);
+          didSomething = true;
 
+          clearNotes(playedNotes);
           song = skaningen(this, sheet);
 
           line.s.setVisible(true);
           line.t = 0;
+        }
 
-          /*
+        if (didSomething) {
           yourTurn = false;
-
-          setTimeout(() => {
-            player.hp -= 5 + Math.round(Math.random() * 5);
-            yourTurn = true;
-            displayPlayerStats(player);
-          }, 3000);*/
         }
       }
 
@@ -184,4 +199,11 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
       }
     },
   }
+}
+
+function clearNotes(playedNotes: {s: Phaser.GameObjects.Image, hit: boolean}[]) {
+  const count = playedNotes.filter((s) => s.hit).length;
+  playedNotes.forEach((note) => note.s.destroy());
+  while (playedNotes.length > 0) playedNotes.pop();
+  return count;
 }

@@ -5,13 +5,16 @@ type InternalSong = {
   name: 'skaningen',
   endsAt: number;
   startsAt: number;
+  fullEnd: number;
   notes: string;
   timings: number[];
 };
 
 export type Song = {
+  name: 'skaningen',
   endsAt: number;
   startsAt: number;
+  fullEnd: number;
   notes: Phaser.GameObjects.Image[];
 }
 
@@ -26,15 +29,24 @@ function createSong(internalSong: InternalSong, scene: Phaser.Scene, sheet: Phas
   const combined = Array<Phaser.GameObjects.Image>(notes.length);
 
   for (let i = 0; i < notes.length; i++) {
-    const {x, y} = getPosition(sheet, internalSong.startsAt, internalSong.endsAt, notes[i], internalSong.timings[i])
+    const {x, y} = getPosition(
+      sheet,
+      internalSong.startsAt,
+      internalSong.endsAt,
+      notes[i],
+      internalSong.timings[i]
+    );
 
     combined[i] = scene.add.image(x, y, 'note');
     combined[i].setOrigin(0, 0);
+    combined[i].alpha = 0.5;
   }
 
   return {
+    name: internalSong.name,
     startsAt: internalSong.startsAt,
     endsAt: internalSong.endsAt,
+    fullEnd: internalSong.fullEnd,
     notes: combined,
   };
 }
@@ -58,10 +70,12 @@ const getPosition = (sheet: Phaser.GameObjects.Image, startsAt: number, endsAt: 
 
 const ALLOWED = '§1234567890';
 
+export const isAllowed = (x: string) => ALLOWED.includes(x); 
+
 function noteToY(char: string) {
   if (char === '§') {
     return 0;
-  } else if (ALLOWED.includes(char)) {
+  } else if (isAllowed(char)) {
     const code = char.charCodeAt(0) - '0'.charCodeAt(0);
     return code * -10;
   } else {
@@ -73,24 +87,30 @@ export const skaningen = (scene: Phaser.Scene, sheet: Phaser.GameObjects.Image):
   name: 'skaningen',
   notes: '§2§1312423',
   timings: [
-    124,141,151,161,179,189,198,214,223,233
+    120,
+    139,
+    148,
+    155,
+    177,
+    185,
+    192,
+    211,
+    219,
+    227,
   ],
   startsAt: 124,
   endsAt: 320,
+  fullEnd: 548,
 }, scene, sheet);
 
-export function playNote(t: number, char: string, notes: Song['notes']) {
+export function playNote(t: number, char: string, song: Song, sheet: Phaser.GameObjects.Image) {
   let closest = null;
   let closestDistance = 0;
+
+  const { x, y } = getPosition(sheet, song.startsAt, song.endsAt, char, t);
   
-  const y = noteToY(char);
-
-  if (y === null) {
-    return;
-  }
-
-  for (const note of notes) {
-    const distance = Math.pow(note.x - t, 2) + Math.pow(note.y - y, 2);
+  for (const note of song.notes) {
+    const distance = Math.pow(note.x - x, 2) + Math.pow(note.y - y, 2);
     
     if (closest === null || distance < closestDistance) {
       closest = note;
@@ -100,14 +120,14 @@ export function playNote(t: number, char: string, notes: Song['notes']) {
 
   if (closest && closestDistance < 50) {
     return {
-      x: t,
+      x,
       y,
       hit: true,
     };
   }
 
   return {
-    x: t,
+    x,
     y,
     hit: false,
   }
