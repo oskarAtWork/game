@@ -3,7 +3,7 @@ import gaspUrl from '../assets/gasp.mp3';
 import skaningenUrl from '../assets/skaningen.mp3';
 import playerUrl from '../assets/adam.png';
 import sheetUrl from '../assets/sheet.png';
-import ballUrl from '../assets/ball.png';
+import notesUrl from '../assets/notes.png';
 import enemyUrl from '../assets/cat.png';
 import { displayEnemyStats, Enemy } from './enemy';
 import { displayPlayerStats, Player } from './player';
@@ -65,7 +65,7 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
       this.load.image(playerUrl, playerUrl);
       this.load.image(sheetUrl, sheetUrl);
       this.load.image(enemyUrl, enemyUrl);
-      this.load.image(ballUrl, ballUrl);
+      this.load.image('note', notesUrl);
       this.load.audio(gaspUrl, gaspUrl);
       this.load.audio(skaningenUrl, skaningenUrl);
     },
@@ -73,7 +73,7 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
       sheet = this.add.image(400, 20, sheetUrl);
 
       ball = {
-        s: this.add.image(300, 20, ballUrl),
+        s: this.add.image(300, 20, 'note'),
         t: 0,
       };
       ball.s.setVisible(false);
