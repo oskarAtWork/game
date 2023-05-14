@@ -66,6 +66,7 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
       this.load.image(playerUrl, playerUrl);
       this.load.image(sheetUrl, sheetUrl);
       this.load.image(enemyUrl, enemyUrl);
+      this.load.image(lineUrl, lineUrl);
       this.load.image('note', noteUrl);
       this.load.audio(gaspUrl, gaspUrl);
       this.load.audio(skaningenUrl, skaningenUrl);

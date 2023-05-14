@@ -39,7 +39,7 @@ function createSong(internalSong: InternalSong, scene: Phaser.Scene, sheet: Phas
   };
 }
 
-const getPosition = (sheet: Phaser.GameObjects.Image, startsAt: number, endsAt: number, char: string, t: number) {
+const getPosition = (sheet: Phaser.GameObjects.Image, startsAt: number, endsAt: number, char: string, t: number) => {
   const fraction = (t - startsAt) / (endsAt - startsAt);
   const x = sheet.x + fraction * sheet.displayWidth;
 
