@@ -1,9 +1,10 @@
 import 'phaser';
 import gaspUrl from '../assets/gasp.mp3';
+import lineUrl from '../assets/line.png';
 import skaningenUrl from '../assets/skaningen.mp3';
 import playerUrl from '../assets/adam.png';
 import sheetUrl from '../assets/sheet.png';
-import notesUrl from '../assets/notes.png';
+import notesUrl from '../assets/note.png';
 import enemyUrl from '../assets/cat.png';
 import { displayEnemyStats, Enemy } from './enemy';
 import { displayPlayerStats, Player } from './player';
@@ -23,7 +24,7 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
   let enemy: Enemy;
   let player: Player;
   let sheet: Phaser.GameObjects.Image;
-  let ball: {
+  let line: {
     s: Phaser.GameObjects.Image;
     t: number,
   };
@@ -65,18 +66,21 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
       this.load.image(playerUrl, playerUrl);
       this.load.image(sheetUrl, sheetUrl);
       this.load.image(enemyUrl, enemyUrl);
+      this.load.image(lineUrl, lineUrl);
       this.load.image('note', notesUrl);
       this.load.audio(gaspUrl, gaspUrl);
       this.load.audio(skaningenUrl, skaningenUrl);
     },
     create() {
-      sheet = this.add.image(400, 20, sheetUrl);
+      sheet = this.add.image(200, 20, sheetUrl);
+      sheet.setOrigin(0, 0);
 
-      ball = {
-        s: this.add.image(300, 20, 'note'),
+      line = {
+        s: this.add.image(300, 20, lineUrl),
         t: 0,
       };
-      ball.s.setVisible(false);
+      line.s.setOrigin(0, 0);
+      line.s.setVisible(false);
 
       player = {
         s: this.add.image(100, 300, playerUrl),
@@ -90,7 +94,7 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
       document.addEventListener('keydown', (ev) => {
         const el = document.getElementById('keypresses') as HTMLElement;
         if (ev.key.toUpperCase() === 'Q') {
-          el.innerHTML += ',' + ball.t;
+          el.innerHTML += ',' + line.t;
         } else if (ev.key.toUpperCase() === 'W') {
           el.innerHTML = '';
         }
@@ -113,12 +117,12 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
       displayPlayerStats(player);
     },
     update() {
-      if (song && ball.s.visible) {
-        ball.t += 1;
-        if (ball.t > song.endsAt) {
-          ball.s.setVisible(false);
+      if (song && line.s.visible) {
+        line.t += 1;
+        if (line.t > song.endsAt) {
+          line.s.setVisible(false);
         }
-        ball.s.x = (sheet.x - 210) + 420 * ((ball.t - song.startsAt) / (song.endsAt - song.startsAt));
+        line.s.x = (sheet.x) + sheet.displayWidth * ((line.t - song.startsAt) / (song.endsAt - song.startsAt));
       }
 
       if (enemy.resistFear <= 0) {
@@ -158,9 +162,10 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
         if (didSomething) {
           displayEnemyStats(enemy);
 
-          song = skaningen(this);
-          ball.s.setVisible(true);
-          ball.t = 0;
+          song = skaningen(this, sheet);
+
+          line.s.setVisible(true);
+          line.t = 0;
 
           /*
           yourTurn = false;
