@@ -1,22 +1,26 @@
 import 'phaser';
-import particleUrl from '../assets/particle.png';
 import gaspUrl from '../assets/gasp.mp3';
-import playerUrl from '../assets/cat.png';
+import playerUrl from '../assets/adam.png';
+import enemyUrl from '../assets/cat.png';
+import { displayEnemyStats, Enemy } from './enemy';
 
 export const menuSceneKey = 'MenuScene';
 
 export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes.CreateSceneFromObjectConfig {
   let keys: {
     S: Phaser.Input.Keyboard.Key;
-    LEFT: Phaser.Input.Keyboard.Key;
-    RIGHT: Phaser.Input.Keyboard.Key;
-    DOWN: Phaser.Input.Keyboard.Key;
-    UP: Phaser.Input.Keyboard.Key;
+    G: Phaser.Input.Keyboard.Key;
+    D: Phaser.Input.Keyboard.Key;
+    A: Phaser.Input.Keyboard.Key;
+    E: Phaser.Input.Keyboard.Key;
   };
   let sprites: {s: Phaser.GameObjects.Image, r: number }[];
   let player: {
     s: Phaser.GameObjects.Image,
   };
+
+
+  let enemy: Enemy;
 
   return {
     key: menuSceneKey,
@@ -28,77 +32,86 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
           S: this.input.keyboard.addKey(
             Phaser.Input.Keyboard.KeyCodes.S,
           ),
-          LEFT: this.input.keyboard.addKey(
-            Phaser.Input.Keyboard.KeyCodes.LEFT,
+          G: this.input.keyboard.addKey(
+            Phaser.Input.Keyboard.KeyCodes.G,
           ),
-          RIGHT: this.input.keyboard.addKey(
-            Phaser.Input.Keyboard.KeyCodes.RIGHT,
+          D: this.input.keyboard.addKey(
+            Phaser.Input.Keyboard.KeyCodes.D,
           ),
-          DOWN: this.input.keyboard.addKey(
-            Phaser.Input.Keyboard.KeyCodes.DOWN,
+          A: this.input.keyboard.addKey(
+            Phaser.Input.Keyboard.KeyCodes.A,
           ),
-          UP: this.input.keyboard.addKey(
-            Phaser.Input.Keyboard.KeyCodes.UP,
-          )
+          E: this.input.keyboard.addKey(
+            Phaser.Input.Keyboard.KeyCodes.E,
+          ),
         }
       } else {
-        console.warn('Seems like we do not have a keyboard');
+        throw Error('no keyboard, what');
       }
 
       keys.S.isDown = false;
-      keys.LEFT.isDown = false;
-      keys.RIGHT.isDown = false;
-      this.load.image('particle', particleUrl);
-      this.load.image('player', playerUrl);
-      this.load.audio('gasp', gaspUrl);
+      keys.G.isDown = false;
+      keys.D.isDown = false;
+      keys.A.isDown = false;
+      keys.E.isDown = false;
+
+      this.load.image(playerUrl, playerUrl);
+      this.load.image(enemyUrl, enemyUrl);
+      this.load.audio(gaspUrl, gaspUrl);
     },
     create() {
-      this.add.text(0, 0, 'Press S to restart scene', {
+      this.add.text(0, 0, 'G D A E', {
         fontSize: '60px',
         fontFamily: "Helvetica",
       });
   
-      const img = this.add.image(100, 100, 'player');
       player = {
-        s: img,
+        s: this.add.image(100, 100, playerUrl),
       }
 
-      for (let i = 0; i < 10; i++) {
-          const x = Phaser.Math.Between(-64, 800);
-          const y = Phaser.Math.Between(-64, 600);
-  
-          const image = this.add.image(x, y, 'particle');
-          image.setBlendMode(Phaser.BlendModes.ADD);
-          sprites.push({ s: image, r: 2 + Math.random() * 6 });
+      enemy = {
+        s: this.add.image(400, 100, enemyUrl),
+        text: this.add.text(500, 100, '', {
+          fontSize: '20px',
+          fontFamily: "Helvetica",
+        }),
+        resistConfuse: 3,
+        resistFear: 2,
+        resistGroove: 3,
+        resistSleep: 4,
+        hasEarMuffs: false,
       }
+
+      displayEnemyStats(enemy);
     },
     update() {
       if (keys.S.isDown) {
-        this.sound.play('gasp');
+        this.sound.play(gaspUrl);
         this.scene.start(menuSceneKey);
       }
 
-      if (keys.LEFT.isDown) {
-        player.s.x -= 4;
+      if (keys.G.isDown) {
+        enemy.resistSleep -= 1;
+        keys.G.isDown = false;
+        displayEnemyStats(enemy);
       }
-      if (keys.RIGHT.isDown) {
-        player.s.x += 4;
+
+      if (keys.D.isDown) {
+        enemy.resistFear -= 1;
+        keys.D.isDown = false;
+        displayEnemyStats(enemy);
       }
-      if (keys.DOWN.isDown) {
-        player.s.y += 4;
+
+      if (keys.A.isDown) {
+        enemy.resistGroove -= 1;
+        keys.A.isDown = false;
+        displayEnemyStats(enemy);
       }
-      if (keys.UP.isDown) {
-        player.s.y -= 4;
-      }
-  
-      for (let i = 0; i < sprites.length; i++) {
-          const sprite = sprites[i].s;
-  
-          sprite.y -= sprites[i].r;
-  
-          if (sprite.y < -256) {
-              sprite.y = 700;
-          }
+
+      if (keys.E.isDown) {
+        enemy.resistConfuse -= 1;
+        keys.E.isDown = false;
+        displayEnemyStats(enemy);
       }
     },
   }
