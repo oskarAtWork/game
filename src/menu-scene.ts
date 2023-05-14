@@ -106,18 +106,21 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
           enemy.resistFear -= 1;
           keys.D.isDown = false;
           yourTurn = false;
+          didSomething = true;
         }
   
         if (keys.A.isDown) {
           enemy.resistGroove -= 1;
           keys.A.isDown = false;
           yourTurn = false;
+          didSomething = true;
         }
   
         if (keys.E.isDown) {
           enemy.resistConfuse -= 1;
           keys.E.isDown = false;
           yourTurn = false;
+          didSomething = true;
         }
 
         if (didSomething) {
