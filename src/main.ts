@@ -1,27 +1,17 @@
 import './style.css'
 
-// const app = document.querySelector<HTMLDivElement>('#app')!
-
-// app.innerHTML = `
-//   <h1>Hello Vite!</h1>
-//   <a href="https://vitejs.dev/guide/features.html" target="_blank">Documentation</a>
-//   <div id="game"></div>
-// `;
-
 import 'phaser';
 import { menu } from './menu-scene';
 
-
 const GameConfig: Phaser.Types.Core.GameConfig = {
-  title: 'ExampleGame',
+  title: "Molly and Oskar's game",
   url: 'https://github.com/digitsensitive/phaser3-typescript',
   version: '2.0',
   width: 800,
   height: 600,
   type: Phaser.AUTO,
   parent: 'app',
-  // `as as Phaser.Types.Scenes.SettingsConfig[]` is required until https://github.com/photonstorm/phaser/pull/6235
-  scene: [menu()] as Phaser.Types.Scenes.SettingsConfig[],
+  scene: [menu()],
   input: {
     keyboard: true
   },
@@ -29,7 +19,7 @@ const GameConfig: Phaser.Types.Core.GameConfig = {
     default: 'arcade',
     arcade: {
       gravity: { y: 0 },
-      debug: false
+      debug: true
     }
   },
   backgroundColor: '#300000',
@@ -43,7 +33,6 @@ const GameConfig: Phaser.Types.Core.GameConfig = {
     expandParent: false,
   },
 };
-
 
 export class Game extends Phaser.Game {
   constructor(config: Phaser.Types.Core.GameConfig) {
