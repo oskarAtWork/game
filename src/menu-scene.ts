@@ -79,16 +79,16 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
       }
 
       if (keys.LEFT.isDown) {
-        player.s.x -= 3;
+        player.s.x -= 4;
       }
       if (keys.RIGHT.isDown) {
-        player.s.x += 3;
+        player.s.x += 4;
       }
       if (keys.DOWN.isDown) {
-        player.s.y += 3;
+        player.s.y += 4;
       }
       if (keys.UP.isDown) {
-        player.s.y -= 3;
+        player.s.y -= 4;
       }
   
       for (let i = 0; i < sprites.length; i++) {
