@@ -111,13 +111,13 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
         turnText.text = 'Imma fuck you up!!';
       }
 
-      if (ball.s.visible && song) {
+      if (song) {
         ball.t += 1;
 
-        if (ball.t > song.songLength) {
+        if (ball.t > song.endsAt) {
           ball.s.setVisible(false);
         }
-        ball.s.x = (300) + 200 * (ball.t/song.songLength) 
+        ball.s.x = (300) + 300 * (ball.t/song.endsAt) 
       }
 
       if (enemy.resistFear <= 0) {
