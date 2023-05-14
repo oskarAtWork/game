@@ -9,18 +9,13 @@ type InternalSong = {
   timings: number[];
 };
 
-type NoteEvent = {
-  x: number,
-  y: number,
-}
-
 export type Song = {
   endsAt: number;
   startsAt: number;
-  notes: NoteEvent[];
+  notes: Phaser.GameObjects.Image;
 }
 
-function createSong(internalSong: InternalSong): Song {
+function createSong(internalSong: InternalSong, scene: Phaser.Scene): Song {
   const notes = internalSong.notes.split('');
   if (notes.length !== internalSong.timings.length) {
     const errorMessage =`notes length is ${notes.length} but timings length is ${internalSong.timings.length} for song ${internalSong.name}`;
@@ -28,7 +23,7 @@ function createSong(internalSong: InternalSong): Song {
     throw Error(errorMessage);
   }
 
-  const combined = Array<NoteEvent>(notes.length);
+  const combined = Array<Phaser.GameObjects.Image>(notes.length);
 
   for (let i = 0; i < notes.length; i++) {
     const y = noteToY(notes[i]);
@@ -38,6 +33,8 @@ function createSong(internalSong: InternalSong): Song {
       window.alert(err);
       throw Error(err);
     }
+
+    scene.add.image('note')
 
     combined[i] = {
       x: internalSong.timings[i],
@@ -65,7 +62,7 @@ function noteToY(char: string) {
   }
 }
 
-export const skaningen: Song = createSong({
+export const skaningen = (scene: Phaser.Scene): Song => createSong({
   name: 'skaningen',
   notes: '§2§1312423',
   timings: [
@@ -73,7 +70,7 @@ export const skaningen: Song = createSong({
   ],
   startsAt: 100,
   endsAt: 320,
-});
+}, scene);
 
 export function playNote(t: number, char: string, notes: Song['notes']) {
   let closest = null;

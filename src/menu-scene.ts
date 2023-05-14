@@ -2,6 +2,7 @@ import 'phaser';
 import gaspUrl from '../assets/gasp.mp3';
 import skaningenUrl from '../assets/skaningen.mp3';
 import playerUrl from '../assets/adam.png';
+import sheetUrl from '../assets/sheet.png';
 import ballUrl from '../assets/ball.png';
 import enemyUrl from '../assets/cat.png';
 import { displayEnemyStats, Enemy } from './enemy';
@@ -21,6 +22,7 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
 
   let enemy: Enemy;
   let player: Player;
+  let sheet: Phaser.GameObjects.Image;
   let ball: {
     s: Phaser.GameObjects.Image;
     t: number,
@@ -61,12 +63,15 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
       keys.E.isDown = false;
 
       this.load.image(playerUrl, playerUrl);
+      this.load.image(sheetUrl, sheetUrl);
       this.load.image(enemyUrl, enemyUrl);
       this.load.image(ballUrl, ballUrl);
       this.load.audio(gaspUrl, gaspUrl);
       this.load.audio(skaningenUrl, skaningenUrl);
     },
     create() {
+      sheet = this.add.image(400, 20, sheetUrl);
+
       ball = {
         s: this.add.image(300, 20, ballUrl),
         t: 0,
@@ -108,12 +113,12 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
       displayPlayerStats(player);
     },
     update() {
-      if (song) {
+      if (song && ball.s.visible) {
         ball.t += 1;
         if (ball.t > song.endsAt) {
           ball.s.setVisible(false);
         }
-        ball.s.x = (300) + 300 * (ball.t/song.endsAt);
+        ball.s.x = (sheet.x - 210) + 420 * ((ball.t - song.startsAt) / (song.endsAt - song.startsAt));
       }
 
       if (enemy.resistFear <= 0) {
@@ -153,7 +158,7 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
         if (didSomething) {
           displayEnemyStats(enemy);
 
-          song = skaningen;
+          song = skaningen(this);
           ball.s.setVisible(true);
           ball.t = 0;
 
