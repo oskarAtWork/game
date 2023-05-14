@@ -3,7 +3,7 @@ import gaspUrl from '../assets/gasp.mp3';
 import skaningenUrl from '../assets/skaningen.mp3';
 import playerUrl from '../assets/adam.png';
 import sheetUrl from '../assets/sheet.png';
-import notesUrl from '../assets/notes.png';
+import noteUrl from '../assets/note.png';
 import enemyUrl from '../assets/cat.png';
 import { displayEnemyStats, Enemy } from './enemy';
 import { displayPlayerStats, Player } from './player';
@@ -65,7 +65,7 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
       this.load.image(playerUrl, playerUrl);
       this.load.image(sheetUrl, sheetUrl);
       this.load.image(enemyUrl, enemyUrl);
-      this.load.image('note', notesUrl);
+      this.load.image('note', noteUrl);
       this.load.audio(gaspUrl, gaspUrl);
       this.load.audio(skaningenUrl, skaningenUrl);
     },
