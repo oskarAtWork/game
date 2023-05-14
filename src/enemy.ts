@@ -4,7 +4,7 @@ export type Enemy = {
   resistSleep: number; // G
   resistFear: number; // D
   resistGroove: number; // A
-  resistConfuse: number; // E
+  confused: boolean; // E
   hasEarMuffs: boolean;
   text: Phaser.GameObjects.Text;
   s: Phaser.GameObjects.Image;
@@ -15,7 +15,7 @@ export const displayEnemyStats = (enemy: Enemy) => {
 resistSleep ${enemy.resistSleep}
 resistFear ${enemy.resistFear}
 resistGroove ${enemy.resistGroove}
-resistConfuse ${enemy.resistConfuse}
+confused ${enemy.confused ? 'yes' : 'no'}
   `.trim();
 
   enemy.text.text = str;
