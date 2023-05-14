@@ -27,7 +27,6 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
   };
   let song: undefined | Song;
 
-  let turnText: Phaser.GameObjects.Text;
   let yourTurn = true;
 
   return {
@@ -68,11 +67,6 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
       this.load.audio(skaningenUrl, skaningenUrl);
     },
     create() {
-      turnText = this.add.text(0, 0, '', {
-        fontSize: '60px',
-        fontFamily: "Helvetica",
-      });
-
       ball = {
         s: this.add.image(300, 20, ballUrl),
         t: 0,
@@ -80,17 +74,26 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
       ball.s.setVisible(false);
 
       player = {
-        s: this.add.image(100, 100, playerUrl),
-        text: this.add.text(120, 120, '', {
+        s: this.add.image(100, 300, playerUrl),
+        text: this.add.text(120, 320, '', {
           fontSize: '20px',
           fontFamily: "Helvetica",
         }),
         hp: 40,
       }
 
+      document.addEventListener('keydown', (ev) => {
+        const el = document.getElementById('keypresses') as HTMLElement;
+        if (ev.key.toUpperCase() === 'Q') {
+          el.innerHTML += ',' + ball.t;
+        } else if (ev.key.toUpperCase() === 'W') {
+          el.innerHTML = '';
+        }
+      })
+
       enemy = {
-        s: this.add.image(400, 100, enemyUrl),
-        text: this.add.text(500, 100, '', {
+        s: this.add.image(400, 300, enemyUrl),
+        text: this.add.text(500, 300, '', {
           fontSize: '20px',
           fontFamily: "Helvetica",
         }),
@@ -105,19 +108,12 @@ export function menu(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes
       displayPlayerStats(player);
     },
     update() {
-      if (yourTurn) {
-        turnText.text = 'Your turn: G D A E';
-      } else {
-        turnText.text = 'Imma fuck you up!!';
-      }
-
       if (song) {
         ball.t += 1;
-
         if (ball.t > song.endsAt) {
           ball.s.setVisible(false);
         }
-        ball.s.x = (300) + 300 * (ball.t/song.endsAt) 
+        ball.s.x = (300) + 300 * (ball.t/song.endsAt);
       }
 
       if (enemy.resistFear <= 0) {
