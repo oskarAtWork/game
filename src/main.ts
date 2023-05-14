@@ -3,10 +3,11 @@ import './style.css'
 import 'phaser';
 import { menu } from './menu-scene';
 
+
 const GameConfig: Phaser.Types.Core.GameConfig = {
   title: "Molly and Oskar's game",
   url: 'https://github.com/digitsensitive/phaser3-typescript',
-  version: '2.0',
+  version: '2.1',
   width: 800,
   height: 600,
   type: Phaser.AUTO,
