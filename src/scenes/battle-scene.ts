@@ -1,29 +1,16 @@
 import "phaser";
-import gaspUrl from "../../assets/gasp.mp3";
-import lineUrl from "../../assets/line.png";
-import skaningenUrl from "../../assets/skaningen.mp3";
-import playerUrl from "../../assets/adam.png";
-import sheetUrl from "../../assets/sheet.png";
-import backgroundUrl from "../../assets/background.png";
-import noteUrl from "../../assets/note.png";
-import enemyUrl from "../../assets/uffe.png";
+
 import { displayEnemyStats, Enemy } from "../enemy";
 import { displayPlayerStats, Player } from "../player";
 import { isAllowed, playNote, skaningen, Song } from "../songs";
 import { createSheet, Sheet } from "../sheet";
+import { preload } from "../preload";
 
 export const battleSceneKey = "BattleScene";
 
 export function battle():
   | Phaser.Types.Scenes.SettingsConfig
   | Phaser.Types.Scenes.CreateSceneFromObjectConfig {
-  let keys: {
-    S: Phaser.Input.Keyboard.Key;
-    G: Phaser.Input.Keyboard.Key;
-    D: Phaser.Input.Keyboard.Key;
-    A: Phaser.Input.Keyboard.Key;
-    E: Phaser.Input.Keyboard.Key;
-  };
 
   let enemy: Enemy;
   let player: Player;
@@ -41,23 +28,40 @@ export function battle():
     key: battleSceneKey,
     preload() {
       if (!this.input.keyboard) {
-        throw Error("no keyboard, what");
+        throw Error('No keyboard');
       }
 
-      keys = {
-        S: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
-        G: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.G),
-        D: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
-        A: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
-        E: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E),
-      };
+      preload(this);
 
       this.input.keyboard.on("keydown", (ev: { key: string }) => {
+        const key = ev.key.toUpperCase();
+
         const el = document.getElementById("keypresses") as HTMLElement;
-        if (ev.key.toUpperCase() === "Q") {
+        if (key === "Q") {
           el.innerHTML += "," + line.t;
-        } else if (ev.key.toUpperCase() === "W") {
+          return;
+        } else if (key === "W") {
           el.innerHTML = "";
+          return;
+        }
+
+        console.log(key);
+
+        if (yourTurn) {
+          if (key === 'S') {
+            this.sound.play('gasp');
+            this.scene.start(battleSceneKey);
+          } else if (key === 'D') {
+            this.sound.play('skaningen');
+
+            clearNotes(playedNotes);
+            song = skaningen(this, sheet);
+
+            line.s.setVisible(true);
+            line.t = 0;
+            yourTurn = false;
+            return;
+          }
         }
 
         if (!isAllowed(ev.key)) {
@@ -72,40 +76,20 @@ export function battle():
         const note = { s: this.add.image(x, y, "note"), hit };
         playedNotes.push(note);
       });
-
-      keys.S.isDown = false;
-      keys.G.isDown = false;
-      keys.D.isDown = false;
-      keys.A.isDown = false;
-      keys.E.isDown = false;
-
-      // audio
-      this.load.audio(gaspUrl, gaspUrl);
-      this.load.audio(skaningenUrl, skaningenUrl);
-
-      // images
-      this.load.image(playerUrl, playerUrl);
-      this.load.image(enemyUrl, enemyUrl);
-      this.load.image(enemyUrl, enemyUrl);
-      this.load.image(lineUrl, lineUrl);
-      this.load.image(backgroundUrl, backgroundUrl);
-      // so that we can easily refer to it in other files easily (level file)
-      this.load.image("note", noteUrl);
-      this.load.image("sheet", sheetUrl);
     },
     create() {
-      this.add.image(0, 0, backgroundUrl).setOrigin(0, 0);
+      this.add.image(0, 0, 'background').setOrigin(0, 0);
       sheet = createSheet(this);
 
       line = {
-        s: this.add.image(300, 20, lineUrl),
+        s: this.add.image(300, 20, 'line'),
         t: 0,
       };
       line.s.setOrigin(0, 0);
       line.s.setVisible(false);
 
       player = {
-        s: this.add.image(100, 300, playerUrl),
+        s: this.add.image(100, 300, 'player'),
         text: this.add.text(120, 320, "", {
           fontSize: "20px",
           fontFamily: "Helvetica",
@@ -114,7 +98,7 @@ export function battle():
       };
 
       enemy = {
-        s: this.add.image(650, 300, enemyUrl),
+        s: this.add.image(650, 300, 'enemy'),
         text: this.add.text(650, 10, "", {
           fontSize: "20px",
           fontFamily: "Helvetica",
@@ -169,32 +153,6 @@ export function battle():
       if (enemy.resistFear <= 0) {
         enemy.s.x += 10;
         enemy.s.flipX = true;
-      }
-
-      if (yourTurn) {
-        let didSomething = false;
-
-        if (keys.D.isDown) {
-          this.sound.play(skaningenUrl);
-          keys.D.isDown = false;
-
-          didSomething = true;
-
-          clearNotes(playedNotes);
-          song = skaningen(this, sheet);
-
-          line.s.setVisible(true);
-          line.t = 0;
-        }
-
-        if (didSomething) {
-          yourTurn = false;
-        }
-      }
-
-      if (keys.S.isDown) {
-        this.sound.play(gaspUrl);
-        this.scene.start(battleSceneKey);
       }
     },
   };
