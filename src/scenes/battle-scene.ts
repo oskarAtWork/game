@@ -45,8 +45,6 @@ export function battle():
           return;
         }
 
-        console.log(key);
-
         if (yourTurn) {
           if (key === 'S') {
             this.sound.play('gasp');
@@ -121,6 +119,12 @@ export function battle():
           sheet.innerX() +
           sheet.innerWidth() *
             ((line.t - song.startsAt) / (song.endsAt - song.startsAt));
+
+        if (line.t === song.startsAt || line.t === song.endsAt) {
+          const { x, y, hit } = playNote(line.t, '§', song, sheet);
+          const note = { s: this.add.image(x, y, "note"), hit };
+          playedNotes.push(note);
+        }
 
         if (line.t > song.endsAt) {
           line.s.setVisible(false);

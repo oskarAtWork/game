@@ -98,7 +98,7 @@ export const skaningen = (scene: Phaser.Scene, sheet: Sheet): Song => createSong
     217, // fourth beat
   ],
   startsAt: 114,
-  endsAt: 330,
+  endsAt: 328,
   fullEnd: 548,
 }, scene, sheet);
 
