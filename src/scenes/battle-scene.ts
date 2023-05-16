@@ -27,13 +27,9 @@ export function battle():
   return {
     key: battleSceneKey,
     preload() {
-      if (!this.input.keyboard) {
-        throw Error('No keyboard');
-      }
+      const keyboard = preload(this);
 
-      preload(this);
-
-      this.input.keyboard.on("keydown", (ev: { key: string }) => {
+      keyboard.on("keydown", (ev: { key: string }) => {
         const key = ev.key.toUpperCase();
 
         const el = document.getElementById("keypresses") as HTMLElement;
@@ -62,17 +58,12 @@ export function battle():
           }
         }
 
-        if (!isAllowed(ev.key)) {
-          return;
-        }
+        const noteInfo = playNote(line.t, ev.key, song, sheet);
 
-        if (!song) {
-          return;
+        if (noteInfo) {
+          const note = { s: this.add.image(noteInfo.x, noteInfo.y, "note"), hit: noteInfo.hit };
+          playedNotes.push(note);
         }
-
-        const { x, y, hit } = playNote(line.t, ev.key, song, sheet);
-        const note = { s: this.add.image(x, y, "note"), hit };
-        playedNotes.push(note);
       });
     },
     create() {
@@ -119,12 +110,6 @@ export function battle():
           sheet.innerX() +
           sheet.innerWidth() *
             ((line.t - song.startsAt) / (song.endsAt - song.startsAt));
-
-        if (line.t === song.startsAt || line.t === song.endsAt) {
-          const { x, y, hit } = playNote(line.t, '§', song, sheet);
-          const note = { s: this.add.image(x, y, "note"), hit };
-          playedNotes.push(note);
-        }
 
         if (line.t > song.endsAt) {
           line.s.setVisible(false);

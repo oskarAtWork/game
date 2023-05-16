@@ -102,7 +102,11 @@ export const skaningen = (scene: Phaser.Scene, sheet: Sheet): Song => createSong
   fullEnd: 548,
 }, scene, sheet);
 
-export function playNote(t: number, char: string, song: Song, sheet: Sheet) {
+export function playNote(t: number, char: string, song: Song | undefined, sheet: Sheet) {
+  if (!song || !isAllowed(char)) {
+    return undefined;
+  }
+
   let closest = null;
   let closestDistance = 0;
 
