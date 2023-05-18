@@ -1,19 +1,27 @@
 body {
   margin: 0;
   padding: 8px;
-}
-
-
-#app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  background: #e55d87; /* fallback for old browsers */
+  background: -webkit-linear-gradient(to top, #e55d87, #5fc3e4); /* Chrome 10-25, Safari 5.1-6 */
+  background: linear-gradient(to top, #e55d87, #5fc3e4); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+}
+
+#app {
   color: #ff3c00;
   height: 98%;
   width: 98%;
   margin: auto;
 }
 
+h1 {
+  text-align: center;
+}
+
 .window-controls {
+  margin: auto;
   margin-bottom: 0.5em;
 }

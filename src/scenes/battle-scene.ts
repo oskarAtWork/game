@@ -2,9 +2,9 @@ import "phaser";
 
 import { displayEnemyStats, Enemy } from "../enemy";
 import { displayPlayerStats, Player } from "../player";
-import { isAllowed, playNote, skaningen, Song } from "../songs";
+import { clearPlayedNotes, clearSong, playNote, scoreSong, skaningen, Song } from "../songs";
 import { createSheet, Sheet } from "../sheet";
-import { preload } from "../preload";
+import { preload } from "../preload/preload";
 
 export const battleSceneKey = "BattleScene";
 
@@ -48,7 +48,7 @@ export function battle():
           } else if (key === 'D') {
             this.sound.play('skaningen');
 
-            clearNotes(playedNotes);
+            clearPlayedNotes(playedNotes);
             song = skaningen(this, sheet);
 
             line.s.setVisible(true);
@@ -123,8 +123,9 @@ export function battle():
             displayEnemyStats(enemy);
           }
 
-          const score = clearNotes(playedNotes);
+          const score = scoreSong(playedNotes);
           clearSong(song);
+          clearPlayedNotes(playedNotes);
           song = undefined;
 
           enemy.resistFear -= 1 + score;
@@ -147,15 +148,3 @@ export function battle():
   };
 }
 
-function clearNotes(
-  playedNotes: { s: Phaser.GameObjects.Image; hit: boolean }[]
-) {
-  const count = playedNotes.filter((s) => s.hit).length;
-  playedNotes.forEach((note) => note.s.destroy());
-  while (playedNotes.length > 0) playedNotes.pop();
-  return count;
-}
-
-function clearSong(song: Song) {
-  song.notes.forEach((note) => note.destroy());
-}

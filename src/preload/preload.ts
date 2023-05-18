@@ -1,11 +1,11 @@
-import gaspUrl from "../assets/gasp.mp3";
-import lineUrl from "../assets/line.png";
-import skaningenUrl from "../assets/skaningen.mp3";
-import playerUrl from "../assets/adam.png";
-import sheetUrl from "../assets/sheet.png";
-import backgroundUrl from "../assets/background.png";
-import noteUrl from "../assets/note.png";
-import enemyUrl from "../assets/uffe.png";
+import gaspUrl from "../../assets/gasp.mp3";
+import lineUrl from "../../assets/line.png";
+import skaningenUrl from "../../assets/skaningen.mp3";
+import playerUrl from "../../assets/adam.png";
+import sheetUrl from "../../assets/sheet.png";
+import backgroundUrl from "../../assets/background.png";
+import noteUrl from "../../assets/note.png";
+import enemyUrl from "../../assets/uffe.png";
 
 export function preload(scene: Phaser.Scene) {
   if (!scene.input.keyboard) {

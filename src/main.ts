@@ -3,6 +3,7 @@ import './style.css'
 import 'phaser';
 import { battle } from './scenes/battle-scene';
 import { dialog } from './scenes/dialog-scene';
+import { learn } from './scenes/learn-scene';
 
 
 const GameConfig: Phaser.Types.Core.GameConfig = {
@@ -13,7 +14,7 @@ const GameConfig: Phaser.Types.Core.GameConfig = {
   height: 600,
   type: Phaser.AUTO,
   parent: 'app',
-  scene: [dialog(), battle()],
+  scene: [learn(), dialog(), battle()],
   input: {
     keyboard: true
   },
@@ -27,7 +28,7 @@ const GameConfig: Phaser.Types.Core.GameConfig = {
   backgroundColor: '#300000',
   render: { pixelArt: false, antialias: true },
   scale: {
-    mode: Phaser.Scale.CENTER_BOTH,
+
     autoCenter: Phaser.Scale.CENTER_BOTH,
     // `fullscreenTarget` must be defined for phones to not have
     // a small margin during fullscreen.

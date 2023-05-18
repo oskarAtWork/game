@@ -17,6 +17,7 @@ export type Song = {
   startsAt: number;
   fullEnd: number;
   notes: Phaser.GameObjects.Image[];
+  timings: number[];
 }
 
 function createSong(internalSong: InternalSong, scene: Phaser.Scene, sheet: Sheet): Song {
@@ -48,6 +49,7 @@ function createSong(internalSong: InternalSong, scene: Phaser.Scene, sheet: Shee
     endsAt: internalSong.endsAt,
     fullEnd: internalSong.fullEnd,
     notes: combined,
+    timings: internalSong.timings,
   };
 }
 
@@ -110,7 +112,7 @@ export function playNote(t: number, char: string, song: Song | undefined, sheet:
   let closest = null;
   let closestDistance = 0;
 
-  const { x, y } = getPosition(sheet, song.startsAt, song.endsAt, char, t-3);
+  const { x, y } = getPosition(sheet, song.startsAt, song.endsAt, char, t);
   
   for (const note of song.notes) {
     const distance = Math.pow(note.x - x, 2) + Math.pow(note.y - y, 2);
@@ -128,3 +130,19 @@ export function playNote(t: number, char: string, song: Song | undefined, sheet:
   };
 }
 
+export function clearPlayedNotes(
+  playedNotes: { s: Phaser.GameObjects.Image; hit: boolean }[]
+) {
+  playedNotes.forEach((note) => note.s.destroy());
+  while (playedNotes.length > 0) playedNotes.pop();
+}
+
+export function clearSong(song: Song) {
+  song.notes.forEach((note) => note.destroy());
+}
+
+export function scoreSong(
+  playedNotes: { s: Phaser.GameObjects.Image; hit: boolean }[]
+) {
+  return playedNotes.filter((s) => s.hit).length;
+}
