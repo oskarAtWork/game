@@ -3,7 +3,7 @@ import './style.css'
 import 'phaser';
 import { battle } from './scenes/battle-scene';
 import { dialog } from './scenes/dialog-scene';
-import { learn } from './scenes/learn-scene';
+
 
 
 const GameConfig: Phaser.Types.Core.GameConfig = {
@@ -14,7 +14,7 @@ const GameConfig: Phaser.Types.Core.GameConfig = {
   height: 600,
   type: Phaser.AUTO,
   parent: 'app',
-  scene: [dialog(), learn(), battle()],
+  scene: [battle(), dialog()],
   input: {
     keyboard: true
   },

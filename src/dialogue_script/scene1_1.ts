@@ -15,8 +15,8 @@ const scene: Line[] = [
     playLine('...'),
     
     adam('Vilken bra låt. Vem har du den efter?'),
-    oskar('Den är efter den legendariska spelmannen "Spelmannen som inte får nämnas vid namn."'),
-    oskar('Eller, man får nämna honom vid  namn, jag har bara glömt vad han heter.'),
+    oskar('Den är efter den legendariska spelmannen\n"Spelmannen som inte får nämnas vid namn."'),
+    oskar('Eller, man får nämna honom vid namn,\njag har bara glömt vad han heter.'),
     adam('Ah, okej. Har han några fler låtar vi kan jamma på?'),
     oskar('Det finns bara fyra nedtecknade. Vi kan spela allihop, det blir kul!'),
 ];

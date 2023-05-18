@@ -1,12 +1,14 @@
-import { Line, adam, oskar } from "./scene-utils";
+import { Line, adam, molly, oskar } from "./scene-utils";
 
 const scene: Line[] = [
-    oskar('Låtar i G är så himla sömniga, tycker ni inte? Håll in G för att spela Sömnlåten. Ser du rytm-mätaren med den lilla bollen? Tryck på rätt siffra när bollen passerar siffran.'),
-    adam('Vilken bra låt. Vem har du den efter?'),
-    oskar('Den är efter den legendariska spelmannen "Spelmannen som inte får nämnas vid namn."'),
-    oskar('Eller, man får nämna honom vid  namn, jag har bara glömt vad han heter.'),
-    adam('Ah, okej. Har han några fler låtar vi kan jamma på?'),
-    oskar('Det finns bara fyra nedtecknade. Vi kan spela allihop, det blir kul!'),
+    molly('Wow, vilka bra låtar! Det måste vara en helt otrolig spelman.'),
+    oskar('Eller hur! Det sägs att han sitter på Stora Fjärran Berget och att den som går upp dit får lära sig världens bästa låt. '),
+    molly('Det låter som nåt för dig, adam! Du är ju världens frilufsmänniska. Vad säger du, vågar du ta dig an den största spelmansutmaningen av dem alla?', undefined, [
+        'Okej', 'Njaaa'
+    ]),
+    oskar('Nice! Jag har annat för mig så du får göra det själv.'),
+    molly('Öh, jag med. Men love that journey for you!'),
+    adam('Haha, okej.'),
 ];
 
 export default scene;

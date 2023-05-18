@@ -10,7 +10,6 @@ export type DialogPerson = {
   target_y: number;
   x: number,
   y: number;
-
 }
 
 export function preloadPeople(scene: Phaser.Scene) {
@@ -32,3 +31,10 @@ export function createPerson(scene: Phaser.Scene, name: 'oskar' | 'molly' | 'ada
   }
 }
 
+export function updatePerson(person: DialogPerson, talking: boolean, animationT: number, animation: [number, number][]) {
+  person.x = person.x * 0.9 + person.target_x * 0.1;
+  person.y = person.y * 0.9 + person.target_y * 0.1;
+  const [dx, dy] = animation[animationT % animation.length];
+  person.s.x = person.x + (talking ? dx : 0);
+  person.s.y = person.y + (talking ? dy : 0);
+}

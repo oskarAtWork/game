@@ -1,8 +1,8 @@
 import 'phaser';
-import backgroundUrl from '../../assets/background.png';
+import backgroundUrl from '../../assets/livingroom_background.png';
 import { Scene, getCurrentLevel, goToNextScene } from '../progression';
 import { Line } from '../dialogue_script/scene-utils';
-import { DialogPerson, createPerson, preloadPeople } from '../dialog-person';
+import { DialogPerson, createPerson, preloadPeople, updatePerson } from '../dialog-person';
 import { loopdiloop, upAndDown, weave } from '../animations';
 import { Song, skaningen } from '../songs';
 import { Sheet, createSheet } from '../sheet';
@@ -26,7 +26,6 @@ animationRecording();
 
 export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes.CreateSceneFromObjectConfig {
   let currentDialog: Phaser.GameObjects.Text;
-  let pastDialog: Phaser.GameObjects.Text;
   let adam: DialogPerson;
   let oskar: DialogPerson;
   let molly: DialogPerson;
@@ -51,6 +50,8 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
         throw Error('Oh no, wrong level');
       }
 
+      const BASE_LINE = 470;
+
       scene = level.dialog;
 
       this.add.image(0, 0, backgroundUrl).setOrigin(0, 0);
@@ -59,9 +60,9 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
       const adamEnters = scene.some((line) => line.speaker === 'adam' && line.otherAction === 'enter');
       const mollyEnters = scene.some((line) => line.speaker === 'molly' && line.otherAction === 'enter');
 
-      adam = createPerson(this, 'adam', 300, adamEnters ? 1000 : 330);
-      oskar = createPerson(this, 'oskar', 700, oskarEnters ? 1000 : 330);
-      molly = createPerson(this, 'molly', 550, mollyEnters ? 1000 : 330);
+      adam = createPerson(this, 'adam', 300, adamEnters ? 1000 : BASE_LINE);
+      oskar = createPerson(this, 'oskar', 700, oskarEnters ? 1000 : BASE_LINE);
+      molly = createPerson(this, 'molly', 550, mollyEnters ? 1000 : BASE_LINE);
 
       const context = this; 
 
@@ -78,15 +79,15 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
 
             if (otherAction === 'enter') {
               if (speaker === 'oskar') {
-                oskar.target_y = 330;
+                oskar.target_y = BASE_LINE;
               }
     
               if (speaker === 'molly') {
-                molly.target_y = 330;
+                molly.target_y = BASE_LINE;
               }
     
               if (speaker === 'adam') {
-                adam.target_y = 330;
+                adam.target_y = BASE_LINE;
               }
             }
   
@@ -110,20 +111,18 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
         }
       });
 
-      currentDialog = this.add.text(400, 450, '', {
+      this.add.image(0, 0, 'dialog').setOrigin(0, 0);
+
+      currentDialog = this.add.text(400, 500, '', {
         align: 'center',
         fontSize: '1rem',
         color: '#34567a'
       }).setOrigin(0.5, 0);
 
-      pastDialog = this.add.text(400, 420, '', {
-        fontSize: '1rem',
-        color: 'rgba(0, 0, 0, 0.1)'
-      }).setOrigin(0.5, 0);
     },
     update() {
       const dialog: Line | undefined = scene[index];
-      const lastDialog: Line | undefined = scene[index-1];
+
       animationTimer++;
       if (animationTimer < 0) animationTimer = 0;
 
@@ -131,12 +130,7 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
       updatePerson(adam, dialog?.speaker === 'adam', animationTimer, loopdiloop);
       updatePerson(molly, dialog?.speaker === 'molly', animationTimer, upAndDown);
 
-      const isDialog = dialog.speaker !== '';
-
-      pastDialog.setVisible(!isDialog);
-      if (lastDialog) {
-        pastDialog.text = lastDialog.speaker + ': ' + lastDialog.line;
-      }
+      const isDialog = dialog?.speaker !== '';
 
       if (dialog) {
         if (isDialog) {
@@ -151,11 +145,4 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
   }
 }
 
-function updatePerson(person: DialogPerson, talking: boolean, animationT: number, animation: [number, number][]) {
-  person.x = person.x * 0.9 + person.target_x * 0.1;
-  person.y = person.y * 0.9 + person.target_y * 0.1;
-  const [dx, dy] = animation[animationT % animation.length];
-  person.s.x = person.x + (talking ? dx : 0);
-  person.s.y = person.y + (talking ? dy : 0);
-}
 
