@@ -4,9 +4,10 @@ import { clearPlayedNotes, playNote, scoreSong, skaningen, Song } from "../songs
 import { createSheet, Sheet } from "../sheet";
 import { preload } from "../preload/preload";
 import { battleSceneKey } from "./battle-scene";
+import { getCurrenLevel } from "../progression";
 
 
-export const learnSceneKey = "LearnScene";
+export const learnSceneKey = "LearnScene" as const;
 
 export function learn():
   | Phaser.Types.Scenes.SettingsConfig
@@ -64,6 +65,13 @@ export function learn():
       });
     },
     create() {
+      const level = getCurrenLevel();
+
+      if (level.sceneKey !== 'LearnScene') {
+        window.alert('Oh no, wrong level ' + JSON.stringify(level));
+        throw Error('Oh no, wrong level');
+      }
+
       this.add.image(0, 0, 'background').setOrigin(0, 0);
       sheet = createSheet(this);
       song = skaningen(this, sheet);
@@ -82,7 +90,6 @@ export function learn():
         sheet.innerX() +
         sheet.innerWidth() *
           ((line.t - song.startsAt) / (song.endsAt - song.startsAt));
-
     },
   };
 }

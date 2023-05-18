@@ -5,8 +5,9 @@ import { displayPlayerStats, Player } from "../player";
 import { clearPlayedNotes, clearSong, playNote, scoreSong, skaningen, Song } from "../songs";
 import { createSheet, Sheet } from "../sheet";
 import { preload } from "../preload/preload";
+import { getCurrenLevel } from "../progression";
 
-export const battleSceneKey = "BattleScene";
+export const battleSceneKey = "BattleScene" as const;
 
 export function battle():
   | Phaser.Types.Scenes.SettingsConfig
@@ -67,6 +68,13 @@ export function battle():
       });
     },
     create() {
+      const level = getCurrenLevel();
+
+      if (level.sceneKey !== 'BattleScene') {
+        window.alert('Oh no, wrong level ' + JSON.stringify(level));
+        throw Error('Oh no, wrong level');
+      }
+      
       this.add.image(0, 0, 'background').setOrigin(0, 0);
       sheet = createSheet(this);
 

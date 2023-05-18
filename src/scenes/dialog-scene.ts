@@ -2,10 +2,10 @@ import 'phaser';
 import backgroundUrl from '../../assets/background.png';
 import adamUrl from '../../assets/adam-talk.png';
 import oskarUrl from '../../assets/oskar-talk.png';
-import {Line, scene1_1} from '../dialogue_script/scene1_1';
-import { battleSceneKey } from './battle-scene';
+import { Scene, getCurrenLevel, goToNextScene } from '../progression';
+import { Line } from '../dialogue_script/scene-utils';
 
-export const dialogSceneKey = 'DialogScene';
+export const dialogSceneKey = 'DialogScene' as const;
 
 export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes.CreateSceneFromObjectConfig {
   
@@ -13,6 +13,8 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
   let pastDialog: Phaser.GameObjects.Text;
   let adam: Phaser.GameObjects.Image;
   let oskar: Phaser.GameObjects.Image;
+
+  let scene: Scene;
 
   let index = 0;
 
@@ -24,6 +26,15 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
       this.load.image(oskarUrl, oskarUrl);
     },
     create() {
+      const level = getCurrenLevel();
+
+      if (level.sceneKey !== 'DialogScene') {
+        window.alert('Oh no, wrong level ' + JSON.stringify(level));
+        throw Error('Oh no, wrong level');
+      }
+
+      scene = level.dialog;
+
       this.add.image(0, 0, backgroundUrl).setOrigin(0, 0);
       adam = this.add.image(300, 330, adamUrl).setOrigin(0.5, 1);
       oskar = this.add.image(700, 400, oskarUrl).setOrigin(0.5, 1);
@@ -50,8 +61,8 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
       }).setOrigin(0.5, 0.5);
     },
     update() {
-      const dialog: Line | undefined = scene1_1[index];
-      const lastDialog: Line | undefined = scene1_1[index-1];
+      const dialog: Line | undefined = scene[index];
+      const lastDialog: Line | undefined = scene[index-1];
 
       if (index > 0) {
         adam.rotation = adam.rotation * 0.95;
@@ -80,7 +91,7 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
       if (dialog) {
         currentDialog.text = dialog.speaker + ': ' + dialog.line;
       } else {
-        this.scene.start(battleSceneKey);
+        goToNextScene(this.scene);
       }
     },
   }
