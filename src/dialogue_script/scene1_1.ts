@@ -12,7 +12,7 @@ export const scene1_1: Line[] = [
 ];
 
 export type Line = {
-    speaker: 'Oskar' | 'Adam' | ' '| 'Molly',
+    speaker: 'Oskar' | 'Adam' | ' '| 'Molly'| 'Silkeshäger',
     line: string;
     response?: string[], 
 }

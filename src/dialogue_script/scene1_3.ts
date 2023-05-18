@@ -1,4 +1,9 @@
-const scene1_3: Line[] = [
+const adam = (line:string, response?: string[]): Line => ({speaker: 'Adam', line, response})
+const molly = (line:string, response?: string[]): Line => ({speaker: 'Molly', line, response})
+const oskar = (line:string, response?: string[]): Line => ({speaker: 'Oskar', line, response})
+import { Line } from './scene1_1';
+
+export const scene1_3: Line[] = [
     molly('Wow, vilka bra låtar! Det måste vara en helt otrolig spelman.'),
     oskar('Eller hur! Det sägs att han sitter på Stora Fjärran Berget och att den som går upp dit får lära sig världens bästa låt. '),
     molly('Det låter som nåt för dig, Adam! Du är ju världens frilufsmänniska. Vad säger du, vågar du ta dig an den största spelmansutmaningen av dem alla?', [
