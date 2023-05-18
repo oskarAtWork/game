@@ -4,7 +4,7 @@ import { clearPlayedNotes, playNote, scoreSong, skaningen, Song } from "../songs
 import { createSheet, Sheet } from "../sheet";
 import { preload } from "../preload/preload";
 import { battleSceneKey } from "./battle-scene";
-import { getCurrenLevel } from "../progression";
+import { getCurrentLevel, goToNextScene } from "../progression";
 
 
 export const learnSceneKey = "LearnScene" as const;
@@ -25,9 +25,15 @@ export function learn():
   return {
     key: learnSceneKey,
     preload() {
-      const keyboard = preload(this);
+      preload(this);
 
-      keyboard.on("keydown", (ev: KeyboardEvent) => {
+    },
+    create() {
+      const level = getCurrentLevel();
+
+      const scene = this;
+
+      this.input.keyboard?.on("keydown", (ev: KeyboardEvent) => {
         const key = ev.key;
         ev.preventDefault();
         console.log(key);
@@ -45,7 +51,7 @@ export function learn():
           currentNoteIndex = 0;
 
           if (score === song.notes.length) {
-            this.scene.start(battleSceneKey);
+            goToNextScene(scene.scene);
           }
 
           return;
@@ -63,12 +69,9 @@ export function learn():
           }
         }
       });
-    },
-    create() {
-      const level = getCurrenLevel();
 
       if (level.sceneKey !== 'LearnScene') {
-        window.alert('Oh no, wrong level ' + JSON.stringify(level));
+        window.alert('Oh no, wrong level at learn ' + JSON.stringify(level));
         throw Error('Oh no, wrong level');
       }
 

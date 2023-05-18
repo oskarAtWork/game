@@ -36,10 +36,16 @@ export const levels: Level[] = [
     sceneKey: 'LearnScene',
     songName: 'Skåningen',
     song: skaningen
+  },
+  {
+    sceneKey: 'BattleScene',
+    battleData: {
+      enemies: 1,
+    }
   }
 ]
 
-export const getCurrenLevel = () => levels[currentLevel];
+export const getCurrentLevel = () => levels[currentLevel];
 
 export function goToNextScene(scene: {start: (key: SceneKey) => void}) {
   currentLevel += 1;

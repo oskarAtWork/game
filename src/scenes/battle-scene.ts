@@ -5,7 +5,7 @@ import { displayPlayerStats, Player } from "../player";
 import { clearPlayedNotes, clearSong, playNote, scoreSong, skaningen, Song } from "../songs";
 import { createSheet, Sheet } from "../sheet";
 import { preload } from "../preload/preload";
-import { getCurrenLevel } from "../progression";
+import { getCurrentLevel } from "../progression";
 
 export const battleSceneKey = "BattleScene" as const;
 
@@ -68,10 +68,10 @@ export function battle():
       });
     },
     create() {
-      const level = getCurrenLevel();
+      const level = getCurrentLevel();
 
       if (level.sceneKey !== 'BattleScene') {
-        window.alert('Oh no, wrong level ' + JSON.stringify(level));
+        window.alert('Oh no, wrong level, at battle scene ' + JSON.stringify(level));
         throw Error('Oh no, wrong level');
       }
       
