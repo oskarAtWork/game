@@ -1,7 +1,9 @@
+import { Line } from "./scene-utils";
+
 const adam = (line:string, response?: string[]): Line => ({speaker: 'Adam', line, response})
 const blank = (line:string, response?: string[]): Line => ({speaker: ' ', line, response})
 const silkeshager = (line:string, response?: string[]): Line => ({speaker: 'Silkeshäger', line, response})
-import { Line } from './scene1_1';
+
 
 
 export const scene1_2: Line[] = [

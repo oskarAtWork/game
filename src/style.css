@@ -25,3 +25,9 @@ h1 {
   margin: auto;
   margin-bottom: 0.5em;
 }
+
+#mouse-tracker {
+  width: 100px;
+  height: 100px;
+  background: white;
+}

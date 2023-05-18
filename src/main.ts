@@ -8,22 +8,15 @@ import { learn } from './scenes/learn-scene';
 
 const GameConfig: Phaser.Types.Core.GameConfig = {
   title: "Molly and Oskar's game",
-  url: 'https://github.com/digitsensitive/phaser3-typescript',
+  url: '',
   version: '2.1',
   width: 800,
   height: 600,
   type: Phaser.AUTO,
   parent: 'app',
-  scene: [learn(), dialog(), battle()],
+  scene: [dialog(), learn(), battle()],
   input: {
     keyboard: true
-  },
-  physics: {
-    default: 'arcade',
-    arcade: {
-      gravity: { y: 0 },
-      debug: true
-    }
   },
   backgroundColor: '#300000',
   render: { pixelArt: false, antialias: true },
