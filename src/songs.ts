@@ -89,8 +89,8 @@ export const skaningen = (scene: Phaser.Scene, sheet: Sheet): Song => createSong
   notes: '§2§1312423',
   timings: [
     114, // first beat
-    139,
-    144,
+    131,
+    140,
     148, // second beat
     173,
     177,

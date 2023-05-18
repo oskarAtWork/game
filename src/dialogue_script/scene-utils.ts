@@ -1,10 +1,22 @@
-export const oskar = (line:string, response?: string[]): Line => ({speaker: 'Oskar', line, response})
-export const adam = (line:string, response?: string[]): Line => ({speaker: 'Adam', line, response})
-export const molly = (line:string, response?: string[]): Line => ({speaker: 'Molly', line, response})
-//const blank = (line:string, response?: string[]): Line => ({speaker: ' ', line, response})
+
+const speaker = (speaker: Line['speaker']) => (line: string, otherAction?: 'enter' | 'sheet', response?: string[]) => ({speaker, line, response, otherAction})
+export const oskar = speaker('oskar');
+export const adam = speaker('adam');
+export const molly = speaker('molly');
+export const silkeshager = speaker('silkeshäger'); 
+export const blank = speaker(''); 
+
+export function playLine(line: string): Line {
+  return {
+    speaker: '',
+    line,
+    otherAction: 'play',
+  }
+}
 
 export type Line = {
-  speaker: 'Oskar' | 'Adam' | ' ' | 'Molly',
+  speaker: 'oskar' | 'adam' | '' | 'molly' | 'silkeshäger',
   line: string;
   response?: string[], 
+  otherAction?: 'enter' | 'sheet' | 'play'
 }
