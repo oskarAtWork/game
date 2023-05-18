@@ -9,13 +9,5 @@ const scene: Line[] = [
     oskar('Okej.'),
 ];
 
-<<<<<<< HEAD
 export default scene;
 
-=======
-export type Line = {
-    speaker: 'Oskar' | 'Adam' | ' '| 'Molly'| 'Silkeshäger',
-    line: string;
-    response?: string[], 
-}
->>>>>>> 0111f92b30d37715a6e9c9c7e1aee4ccf0577476
