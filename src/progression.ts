@@ -2,8 +2,8 @@ import { battleSceneKey } from "./scenes/battle-scene";
 import { dialogSceneKey } from "./scenes/dialog-scene";
 import 'phaser';
 
-import scene1 from './dialogue_script/scene1_1';
-import scene2 from './dialogue_script/scene1_2';
+import scene1 from './dialogue_script/scene1';
+import scene2 from './dialogue_script/scene2';
 
 
 
@@ -23,6 +23,10 @@ export type Level = {
 }
 
 export const levels: Level[] = [
+  {
+    sceneKey: 'DialogScene',
+    dialog: scene2,
+  },
   {
     sceneKey: 'BattleScene',
     battleData: {

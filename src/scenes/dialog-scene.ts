@@ -3,7 +3,7 @@ import backgroundUrl from '../../assets/livingroom_background.png';
 import { Scene, getCurrentLevel, goToNextScene } from '../progression';
 import { Line } from '../dialogue_script/scene-utils';
 import { DialogPerson, createPerson, preloadPeople, updatePerson } from '../dialog-person';
-import { loopdiloop, upAndDown, weave } from '../animations';
+import { heart, loopdiloop, upAndDown, weave } from '../animations';
 import { Song, skaningen } from '../songs';
 import { Sheet, createSheet } from '../sheet';
 import { animationRecording } from '../animation-recording';
@@ -31,7 +31,7 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
   let molly: DialogPerson;
 
   let scene: Scene;
-  let index = 0;
+  let currentLineIndex = 0;
   let animationTimer = 0;
   let learnState: LearnState;
 
@@ -69,9 +69,9 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
       this.input.keyboard!!.on('keydown', function (ev: KeyboardEvent) {
         ev.preventDefault();
         if (ev.key === ' ') {
-          index += 1;
+          currentLineIndex += 1;
 
-          const line = scene[index];
+          const line = scene[currentLineIndex];
 
 
           if (line) {
@@ -109,6 +109,9 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
             }
           }
         }
+        else if (ev.key === 'backspace') {
+          currentLineIndex -= 1;
+        }
       });
 
       this.add.image(0, 0, 'dialog').setOrigin(0, 0);
@@ -116,27 +119,28 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
       currentDialog = this.add.text(400, 500, '', {
         align: 'center',
         fontSize: '1rem',
-        color: '#34567a'
+        color: '#34567a',
+        wordWrap: { width: 800, useAdvancedWrap: true }
       }).setOrigin(0.5, 0);
 
     },
     update() {
-      const dialog: Line | undefined = scene[index];
+      const currentLine: Line | undefined = scene[currentLineIndex];
 
       animationTimer++;
       if (animationTimer < 0) animationTimer = 0;
 
-      updatePerson(oskar, dialog?.speaker === 'oskar', animationTimer, weave);
-      updatePerson(adam, dialog?.speaker === 'adam', animationTimer, loopdiloop);
-      updatePerson(molly, dialog?.speaker === 'molly', animationTimer, upAndDown);
+      updatePerson(oskar, currentLine?.speaker === 'oskar', animationTimer, weave);
+      updatePerson(adam, currentLine?.speaker === 'adam', animationTimer, heart);
+      updatePerson(molly, currentLine?.speaker === 'molly', animationTimer, upAndDown);
 
-      const isDialog = dialog?.speaker !== '';
+      const isDialog = currentLine?.speaker !== '';
 
-      if (dialog) {
+      if (currentLine) {
         if (isDialog) {
-          currentDialog.text = dialog.speaker + ': ' + dialog.line;
+          currentDialog.text = currentLine.speaker + ': ' + currentLine.line;
         } else {
-          currentDialog.text = dialog.line;
+          currentDialog.text = currentLine.line;
         }
       } else {
         goToNextScene(this.scene);

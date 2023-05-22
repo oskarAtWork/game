@@ -14,7 +14,7 @@ const GameConfig: Phaser.Types.Core.GameConfig = {
   height: 600,
   type: Phaser.AUTO,
   parent: 'app',
-  scene: [battle(), dialog()],
+  scene: [dialog(), battle()],
   input: {
     keyboard: true
   },
