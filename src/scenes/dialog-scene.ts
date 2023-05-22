@@ -3,15 +3,36 @@ import 'phaser';
 import { Scene, getCurrentLevel, goToNextScene } from '../progression';
 import { Line } from '../dialogue_script/scene-utils';
 import { DialogPerson, Names, createPerson, preloadPeople, updatePerson } from '../dialog-person';
-import { animation_loopdiloop, animation_upAndDown, animation_weave } from '../animations';
+import { animation_weave } from '../animations';
 import { Song, skaningen } from '../songs';
 import { Sheet, createSheet } from '../sheet';
 import { animationRecording } from '../animation-recording';
 import { preload } from '../preload/preload';
-// import lr from '../../assets/forest_background.png';
+import { exhaust } from '../helper';
 
 export const dialogSceneKey = 'DialogScene' as const;
 
+const BASE_LINE = 470;
+
+const xPosition = (name: Names): number => {
+  switch (name) {
+    case 'adam':
+      return 150;
+
+    case 'molly':
+      return 500;
+      
+    case 'oskar':
+      return 700;
+
+    case 'silkeshäger':
+      return 500;
+  
+    default:
+      exhaust(name);
+      return 0;
+  }
+}
 
 
 type LearnState = {
@@ -64,20 +85,20 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
         throw Error('Oh no, wrong level');
       }
 
-      const BASE_LINE = 470;
+
       this.add.image(0, 0, level.background).setOrigin(0, 0);
 
+
       scene = level.dialog;
+
       for (const line of scene) {
         if (!line.speaker) continue;
         if (characters.has(line.speaker)) continue;
 
-        const enters = scene.some((l) => line.speaker === l.speaker && l.otherAction === 'enter');
-        console.log('RTYU');
-        characters.set(line.speaker, createPerson(this, line.speaker, 100, enters ? 1000 : 300));
-      }
+        const enters = scene.some((s) => s.speaker === line.speaker && line.otherAction?.includes('enter'))
 
- 
+        characters.set(line.speaker, createPerson(this, line.speaker, xPosition(line.speaker), enters ? 1000 : BASE_LINE));
+      }
 
       const context = this;
 
@@ -109,17 +130,12 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
             if (speaker) {
               let person = characters.get(speaker)!!;
 
-              if (otherAction === 'enter') {
+              if (otherAction === 'enter_bottom') {
                 person.target_y = BASE_LINE;
-
               }
               if (otherAction === 'exit') {
-                person.target_y = -1000;
-
+                person.target_y = -30;
               }
-
-
-
             }
 
             if (otherAction === 'sheet') {
