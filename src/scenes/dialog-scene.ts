@@ -117,7 +117,9 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
         const resp = scene[currentLineIndex].response;
 
         if (ev.key === ' ' && !resp) {
-          currentLineIndex += 1;
+          const isAnswer = scene[currentLineIndex-1]?.response;
+
+          currentLineIndex += isAnswer ? 2 : 1;
           switched = true;
         }
 
@@ -197,13 +199,13 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
 
 function speaker(scene: Scene, current: number) {
   const currentLine = scene[current];
-  for (let i = current+1; i < scene.length; i++) {
-    const line = scene[i];
-    if (line.speaker === currentLine.speaker && line.otherAction === 'introduce') {
-      return '???: ';
-    }
+  const introduction = scene.findIndex((line) => line.otherAction === 'introduce' && line.speaker === currentLine.speaker);
+
+  if (introduction <= current) {
+    return currentLine.speaker + ': ';
   }
-  return currentLine.speaker + ': ';
+
+  return '???: ';
 }
 
 

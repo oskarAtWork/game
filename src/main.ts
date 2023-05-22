@@ -3,7 +3,7 @@ import './style.css'
 import 'phaser';
 import { battle } from './scenes/battle-scene';
 import { dialog } from './scenes/dialog-scene';
-import { currentLevel, getCurrentLevel } from './progression';
+import { getCurrentLevel } from './progression';
 
 
 
@@ -19,6 +19,13 @@ const GameConfig: Phaser.Types.Core.GameConfig = {
   input: {
     keyboard: true,
     mouse: true,
+  },
+  physics: {
+    default: 'arcade',
+    arcade: {
+      // Enable Arcade Physics system
+      debug: false, // Set to true for debugging purposes
+    },
   },
   backgroundColor: '#300000',
   render: { pixelArt: false, antialias: true },
