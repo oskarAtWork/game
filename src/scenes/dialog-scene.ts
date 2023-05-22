@@ -2,7 +2,7 @@ import 'phaser';
 // import backgroundUrl from '../../assets/livingroom_background.png';
 import { Scene, getCurrentLevel, goToNextScene } from '../progression';
 import { Line } from '../dialogue_script/scene-utils';
-import { DialogPerson, createPerson, preloadPeople, updatePerson } from '../dialog-person';
+import { DialogPerson, Names, createPerson, preloadPeople, updatePerson } from '../dialog-person';
 import { animation_loopdiloop, animation_upAndDown, animation_weave } from '../animations';
 import { Song, skaningen } from '../songs';
 import { Sheet, createSheet } from '../sheet';
@@ -29,10 +29,8 @@ animationRecording();
 
 export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes.CreateSceneFromObjectConfig {
   let currentDialog: Phaser.GameObjects.Text;
-  let characters: Map<string, DialogPerson>;
-  let adam: DialogPerson;
-  let oskar: DialogPerson;
-  let molly: DialogPerson;
+  let characters: Map<Names, DialogPerson>;
+
 
   let scene: Scene;
   let currentLineIndex: number;
@@ -56,7 +54,7 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
     },
     create() {
       characters = new Map();
-      
+
       currentLineIndex = 0;
       animationTimer = 0;
       const level = getCurrentLevel();
@@ -67,23 +65,19 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
       }
 
       const BASE_LINE = 470;
+      this.add.image(0, 0, level.background).setOrigin(0, 0);
 
       scene = level.dialog;
       for (const line of scene) {
-        characters.set(line.speaker, createPerson(this, line.speaker, 0, 0));
+        if (!line.speaker) continue;
+        if (characters.has(line.speaker)) continue;
+
+        const enters = scene.some((l) => line.speaker === l.speaker && l.otherAction === 'enter');
+        console.log('RTYU');
+        characters.set(line.speaker, createPerson(this, line.speaker, 100, enters ? 1000 : 300));
       }
 
-      this.add.image(0, 0, level.background).setOrigin(0, 0);
-
-      
-
-      const oskarEnters = scene.some((line) => line.speaker === 'oskar' && line.otherAction === 'enter');
-      const adamEnters = scene.some((line) => line.speaker === 'adam' && line.otherAction === 'enter');
-      const mollyEnters = scene.some((line) => line.speaker === 'molly' && line.otherAction === 'enter');
-
-      adam = createPerson(this, 'adam', 300, adamEnters ? 1000 : BASE_LINE);
-      oskar = createPerson(this, 'oskar', 700, oskarEnters ? 1000 : BASE_LINE);
-      molly = createPerson(this, 'molly', 550, mollyEnters ? 1000 : BASE_LINE);
+ 
 
       const context = this;
 
@@ -112,31 +106,20 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
           if (line) {
             const { speaker, otherAction } = line;
 
-            if (otherAction === 'enter') {
-              if (speaker === 'oskar') {
-                oskar.target_y = BASE_LINE;
+            if (speaker) {
+              let person = characters.get(speaker)!!;
+
+              if (otherAction === 'enter') {
+                person.target_y = BASE_LINE;
+
+              }
+              if (otherAction === 'exit') {
+                person.target_y = -1000;
+
               }
 
-              if (speaker === 'molly') {
-                molly.target_y = BASE_LINE;
-              }
 
-              if (speaker === 'adam') {
-                adam.target_y = BASE_LINE;
-              }
-            }
-            if (otherAction === 'exit') {
-              if (speaker === 'oskar') {
-                oskar.target_y = -1000;
-              }
 
-              if (speaker === 'molly') {
-                molly.target_y = -1000;
-              }
-
-              if (speaker === 'adam') {
-                adam.target_y = -1000;
-              }
             }
 
             if (otherAction === 'sheet') {
@@ -176,10 +159,10 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
 
       animationTimer++;
       if (animationTimer < 0) animationTimer = 0;
-
-      updatePerson(oskar, currentLine?.speaker === 'oskar', animationTimer, animation_weave);
-      updatePerson(adam, currentLine?.speaker === 'adam', animationTimer, animation_loopdiloop);
-      updatePerson(molly, currentLine?.speaker === 'molly', animationTimer, animation_upAndDown);
+      
+      characters.forEach(c => {
+        updatePerson(c, currentLine?.speaker === c.name, animationTimer, animation_weave);
+      })
 
       const isDialog = currentLine?.speaker !== '';
 

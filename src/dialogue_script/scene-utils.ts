@@ -1,3 +1,4 @@
+import { Names } from "../dialog-person";
 
 const speaker = (speaker: Line['speaker']) => (line: string, otherAction?: Line['otherAction'], response?: string[]) => ({speaker, line, response, otherAction})
 export const oskar = speaker('oskar');
@@ -15,7 +16,7 @@ export function playLine(line: string): Line {
 }
 
 export type Line = {
-  speaker: 'oskar' | 'adam' | '' | 'molly' | 'silkeshäger',
+  speaker: Names | '',
   line: string;
   response?: string[], 
   otherAction?: 'enter' | 'sheet' | 'play'| 'exit' 

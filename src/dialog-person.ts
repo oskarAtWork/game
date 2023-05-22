@@ -18,7 +18,7 @@ export function preloadPeople(scene: Phaser.Scene) {
   scene.load.image('oskar', oskarUrl);
 }
 
-export type Names = 'oskar' | 'molly' | 'adam';
+export type Names = 'oskar' | 'molly' | 'adam' | 'silkeshäger';
 
 export function createPerson(scene: Phaser.Scene, name: Names, x: number, y: number): DialogPerson {
 
