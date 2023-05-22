@@ -1,13 +1,18 @@
 import { Names } from "../dialog-person";
 
-const speaker = (speaker: Line['speaker']) => (line: string, otherAction?: Action, response?: string[]) => ({speaker, line, response, otherAction})
+const speaker = (speaker: Line['speaker']) => (line: string, otherAction?: Action, response?: Line['response']) => ({speaker, line, response, otherAction})
 export const oskar = speaker('oskar');
 export const adam = speaker('adam');
 export const molly = speaker('molly');
 export const silkeshager = speaker('silkeshäger'); 
 export const blank = speaker(''); 
 
-type Action = 'enter_bottom' | 'enter_top' | 'enter_left' | 'enter_right' | 'sheet' | 'play'| 'exit' ;
+export type EnterAction = 'enter_bottom' | 'enter_top' | 'enter_left' | 'enter_right';
+export type Action =  EnterAction | 'sheet' | 'play'| 'exit' | 'introduce';
+
+export function isEnterAction(line?: Line): line is Line<EnterAction> {
+  return line?.otherAction?.startsWith('enter_') ?? false;
+}
 
 export function playLine(line: string): Line {
   return {
@@ -17,9 +22,13 @@ export function playLine(line: string): Line {
   }
 }
 
-export type Line = {
+
+export type Line<T=Action> = {
   speaker: Names | '',
   line: string;
-  response?: string[], 
-  otherAction?: Action
+  response?: {
+    options: string[],
+    correctIndex: number; 
+  } 
+  otherAction?: T
 }
