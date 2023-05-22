@@ -10,7 +10,7 @@ import scene2 from './dialogue_script/scene2';
 type SceneKey = typeof dialogSceneKey | typeof battleSceneKey;
 export type Scene = typeof scene1 | typeof scene2;
 
-export let currentLevel = 0;
+export let currentLevel = 1;
 
 export type Level = {
   sceneKey: typeof dialogSceneKey;
