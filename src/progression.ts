@@ -4,6 +4,7 @@ import 'phaser';
 
 import scene1 from './dialogue_script/scene1';
 import scene2 from './dialogue_script/scene2';
+import scene3 from './dialogue_script/scene3';
 
 
 
@@ -14,7 +15,8 @@ export let currentLevel = 0;
 
 export type Level = {
   sceneKey: typeof dialogSceneKey;
-  dialog: Scene
+  dialog: Scene;
+  background: string;
 } | {
   sceneKey: typeof battleSceneKey;
   battleData: {
@@ -23,9 +25,21 @@ export type Level = {
 }
 
 export const levels: Level[] = [
+
+  {
+    sceneKey: 'DialogScene',
+    dialog: scene1,
+    background: '/assets/livingroom_background.png',
+  },
   {
     sceneKey: 'DialogScene',
     dialog: scene2,
+    background: '/assets/livingroom_background.png',
+  },
+  {
+    sceneKey: 'DialogScene',
+    dialog: scene3,
+    background: '/assets/forest_background.png',
   },
   {
     sceneKey: 'BattleScene',
@@ -33,10 +47,7 @@ export const levels: Level[] = [
       enemies: 1,
     }
   },
-  {
-    sceneKey: 'DialogScene',
-    dialog: scene1,
-  },
+
 ]
 
 export const getCurrentLevel = () => levels[currentLevel];

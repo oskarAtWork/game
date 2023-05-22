@@ -6,8 +6,8 @@ const scene: Line[] = [
     molly('Det låter som nåt för dig, adam! Du är ju världens frilufsmänniska. Vad säger du, vågar du ta dig an den största spelmansutmaningen av dem alla?', undefined, [
         'Okej', 'Njaaa'
     ]),
-    oskar('Nice! Jag har annat för mig så du får göra det själv.'),
-    molly('Öh, jag med. Men love that journey for you!'),
+    oskar('Nice! Jag har annat för mig så du får göra det själv.', 'exit'),
+    molly('Öh, jag med. Men love that journey for you!', 'exit'),
     adam('Haha, okej.'),
 ];
 

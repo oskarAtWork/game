@@ -3,10 +3,10 @@ import { Line, adam, molly, oskar, playLine } from "./scene-utils";
 
 const scene: Line[] = [
     oskar('adam! adam, vakna!'),
-    adam('...', "enter"),
+    adam('...', ""),
     oskar('Somnade du precis? Spelade jag en för sömnig låt?'),
     adam('Ahjuste. Jo men den var ganska sömnig. Haha.'),
-    molly('Kan du inte lära ut den till oss?', "enter"),
+    molly('Kan du inte lära ut den till oss?', ""),
 
     oskar('Låtar i G är så himla sömniga, tycker ni inte?', "sheet"),
 

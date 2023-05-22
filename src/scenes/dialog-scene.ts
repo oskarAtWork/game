@@ -1,15 +1,18 @@
 import 'phaser';
-import backgroundUrl from '../../assets/livingroom_background.png';
+// import backgroundUrl from '../../assets/livingroom_background.png';
 import { Scene, getCurrentLevel, goToNextScene } from '../progression';
 import { Line } from '../dialogue_script/scene-utils';
 import { DialogPerson, createPerson, preloadPeople, updatePerson } from '../dialog-person';
-import {  animation_loopdiloop, animation_upAndDown, animation_weave } from '../animations';
+import { animation_loopdiloop, animation_upAndDown, animation_weave } from '../animations';
 import { Song, skaningen } from '../songs';
 import { Sheet, createSheet } from '../sheet';
 import { animationRecording } from '../animation-recording';
 import { preload } from '../preload/preload';
+// import lr from '../../assets/forest_background.png';
 
 export const dialogSceneKey = 'DialogScene' as const;
+
+
 
 type LearnState = {
   sheet: Sheet;
@@ -26,23 +29,36 @@ animationRecording();
 
 export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scenes.CreateSceneFromObjectConfig {
   let currentDialog: Phaser.GameObjects.Text;
+  let characters: Map<string, DialogPerson>;
   let adam: DialogPerson;
   let oskar: DialogPerson;
   let molly: DialogPerson;
 
   let scene: Scene;
-  let currentLineIndex = 0;
-  let animationTimer = 0;
+  let currentLineIndex: number;
+  let animationTimer: number;
   let learnState: LearnState;
 
   return {
     key: dialogSceneKey,
     preload() {
+      const level = getCurrentLevel();
+      if (level.sceneKey !== 'DialogScene') {
+        window.alert('Oh no, wrong level at dialog ' + JSON.stringify(level));
+        throw Error('Oh no, wrong level');
+      }
+
       preload(this);
-      this.load.image(backgroundUrl, backgroundUrl);
+      //this.load.image(backgroundUrl, backgroundUrl);
+      this.load.image(level.background, level.background);
+      console.log(level.background);
       preloadPeople(this);
     },
     create() {
+      characters = new Map();
+      
+      currentLineIndex = 0;
+      animationTimer = 0;
       const level = getCurrentLevel();
 
       if (level.sceneKey !== 'DialogScene') {
@@ -53,8 +69,13 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
       const BASE_LINE = 470;
 
       scene = level.dialog;
+      for (const line of scene) {
+        characters.set(line.speaker, createPerson(this, line.speaker, 0, 0));
+      }
 
-      this.add.image(0, 0, backgroundUrl).setOrigin(0, 0);
+      this.add.image(0, 0, level.background).setOrigin(0, 0);
+
+      
 
       const oskarEnters = scene.some((line) => line.speaker === 'oskar' && line.otherAction === 'enter');
       const adamEnters = scene.some((line) => line.speaker === 'adam' && line.otherAction === 'enter');
@@ -64,33 +85,60 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
       oskar = createPerson(this, 'oskar', 700, oskarEnters ? 1000 : BASE_LINE);
       molly = createPerson(this, 'molly', 550, mollyEnters ? 1000 : BASE_LINE);
 
-      const context = this; 
+      const context = this;
 
       this.input.keyboard!!.on('keydown', function (ev: KeyboardEvent) {
         ev.preventDefault();
+        let switched = false;
+
         if (ev.key === ' ') {
           currentLineIndex += 1;
+          switched = true;
+        }
 
+        if (ev.key === 'Backspace' && okToBack(scene, currentLineIndex)) {
+
+          currentLineIndex -= 1;
+          switched = true;
+        }
+
+        if (ev.key.toUpperCase() === 'S') {
+          context.scene.restart();
+        }
+
+        if (switched) {
           const line = scene[currentLineIndex];
 
-
           if (line) {
-            const {speaker, otherAction} = line;
+            const { speaker, otherAction } = line;
 
             if (otherAction === 'enter') {
               if (speaker === 'oskar') {
                 oskar.target_y = BASE_LINE;
               }
-    
+
               if (speaker === 'molly') {
                 molly.target_y = BASE_LINE;
               }
-    
+
               if (speaker === 'adam') {
                 adam.target_y = BASE_LINE;
               }
             }
-  
+            if (otherAction === 'exit') {
+              if (speaker === 'oskar') {
+                oskar.target_y = -1000;
+              }
+
+              if (speaker === 'molly') {
+                molly.target_y = -1000;
+              }
+
+              if (speaker === 'adam') {
+                adam.target_y = -1000;
+              }
+            }
+
             if (otherAction === 'sheet') {
               const sheet = createSheet(context);
               learnState = {
@@ -107,10 +155,9 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
               learnState.line.s.setOrigin(0, 0);
               learnState.line.s.setVisible(false);
             }
+          } else {
+            goToNextScene(context.scene);
           }
-        }
-        else if (ev.key === 'backspace') {
-          currentLineIndex -= 1;
         }
       });
 
@@ -142,11 +189,23 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
         } else {
           currentDialog.text = currentLine.line;
         }
-      } else {
-        goToNextScene(this.scene);
       }
     },
   }
 }
 
+
+function okToBack(scene: Line[], currentLineIndex: number) {
+  const prevLine = scene[currentLineIndex - 1];
+
+  if (!prevLine) {
+    return false;
+  }
+
+  if (prevLine.otherAction === 'sheet') {
+    return false;
+  }
+
+  return true;
+}
 
