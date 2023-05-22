@@ -3,7 +3,7 @@ import backgroundUrl from '../../assets/livingroom_background.png';
 import { Scene, getCurrentLevel, goToNextScene } from '../progression';
 import { Line } from '../dialogue_script/scene-utils';
 import { DialogPerson, createPerson, preloadPeople, updatePerson } from '../dialog-person';
-import { loopdiloop, upAndDown, weave } from '../animations';
+import { animation_loopdiloop, animation_upAndDown, animation_weave } from '../animations';
 import { Song, skaningen } from '../songs';
 import { Sheet, createSheet } from '../sheet';
 import { animationRecording } from '../animation-recording';
@@ -126,9 +126,9 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
       animationTimer++;
       if (animationTimer < 0) animationTimer = 0;
 
-      updatePerson(oskar, dialog?.speaker === 'oskar', animationTimer, weave);
-      updatePerson(adam, dialog?.speaker === 'adam', animationTimer, loopdiloop);
-      updatePerson(molly, dialog?.speaker === 'molly', animationTimer, upAndDown);
+      updatePerson(oskar, dialog?.speaker === 'oskar', animationTimer, animation_weave);
+      updatePerson(adam, dialog?.speaker === 'adam', animationTimer, animation_loopdiloop);
+      updatePerson(molly, dialog?.speaker === 'molly', animationTimer, animation_upAndDown);
 
       const isDialog = dialog?.speaker !== '';
 

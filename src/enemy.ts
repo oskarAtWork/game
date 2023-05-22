@@ -8,6 +8,8 @@ export type Enemy = {
   hasEarMuffs: boolean;
   text: Phaser.GameObjects.Text;
   s: Phaser.GameObjects.Image;
+  sx: number;
+  sy: number;
 }
 
 export const displayEnemyStats = (enemy: Enemy) => {

@@ -104,31 +104,31 @@ export const skaningen = (scene: Phaser.Scene, sheet: Sheet): Song => createSong
   fullEnd: 548,
 }, scene, sheet);
 
+const MIN_DISTANCE = 100;
+
 export function playNote(t: number, char: string, song: Song | undefined, sheet: Sheet) {
   if (!song || !isAllowed(char)) {
     return undefined;
   }
 
-  let closest = null;
-  let closestDistance = 0;
-
   const { x, y } = getPosition(sheet, song.startsAt, song.endsAt, char, t);
   
   for (const note of song.notes) {
-    const distance = Math.pow(note.x - x, 2) + Math.pow(note.y - y, 2);
-    
-    if (closest === null || distance < closestDistance) {
-      closest = note;
-      closestDistance = distance;
+    if (distance(x, y, note) < MIN_DISTANCE) {
+      return {x, y, hit: true}
     }
   }
 
   return {
     x,
     y,
-    hit: !!closest && closestDistance < 50,
+    hit: false,
   };
 }
+
+const distance = (x: number, y: number, note: Phaser.GameObjects.Image) =>
+  Math.pow(note.x - x, 2) + Math.pow(note.y - y, 2)
+
 
 export function clearPlayedNotes(
   playedNotes: { s: Phaser.GameObjects.Image; hit: boolean }[]
@@ -142,7 +142,40 @@ export function clearSong(song: Song) {
 }
 
 export function scoreSong(
-  playedNotes: { s: Phaser.GameObjects.Image; hit: boolean }[]
+  playedNotes: {s: Phaser.GameObjects.Image, hit: boolean }[],
+  song: Song,
 ) {
-  return playedNotes.filter((s) => s.hit).length;
+  let score = 0;
+  const unused: Array<Phaser.GameObjects.Image | undefined> = Array.from(playedNotes.map((s) => s.s));
+
+  for (const songNote of song.notes) {
+    let distanceClosest = 999999;
+    let closest = -1;
+
+    for (let i = 0; i < unused.length; i++) {
+      const pn = playedNotes[i];
+      if (!pn) {
+        continue;
+      }
+
+      const dist = distance(pn.s.x, pn.s.y, songNote);
+
+      if (dist < distanceClosest) {
+        distanceClosest = dist;
+        closest = i;
+      }
+    }
+
+    if (distanceClosest < MIN_DISTANCE) {
+      score += 1;
+      unused[closest] = undefined;
+    }
+  }
+
+  console.log(unused)
+  score -= unused.filter((f) => !!f).length * 0.5;
+
+  console.log(score, song.notes.length)
+
+  return Math.max(1, score) / song.notes.length;
 }
