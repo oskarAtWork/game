@@ -2,7 +2,9 @@ import { Sheet } from "../sheet";
 
 export type ViolinString = 'G' | 'D' | 'A' | 'E';
 
-export type SongNames = 'skaningen' | 'sovningen';
+export const songNames = ['skaningen', 'sovningen', 'knifeSong'] as const;
+
+export type SongNames = typeof songNames[number];
 
 type InternalSong = {
   name: SongNames;

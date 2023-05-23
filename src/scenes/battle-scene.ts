@@ -60,6 +60,7 @@ export function battle():
   | Phaser.Types.Scenes.SettingsConfig
   | Phaser.Types.Scenes.CreateSceneFromObjectConfig {
 
+  let shootStart: number;
   let enemy: Enemy;
   let player: DialogPerson;
   let sheet: Sheet;
@@ -75,7 +76,7 @@ export function battle():
   let previousTurn: Turn | undefined = undefined;
   let hp: Phaser.GameObjects.Image[];
   let animationTimer: number;
-  let attacks: {s: Phaser.GameObjects.Image, destroy: boolean}[];
+  let attacks: {s: Phaser.GameObjects.Image, destroy: boolean, speed: number}[];
 
   return {
     key: battleSceneKey,
@@ -88,6 +89,7 @@ export function battle():
       this.load.image('knife', knifeUrl)
     },
     create() {
+      shootStart = 0;
       animationTimer = 0;
       playedNotes = [];
       hp = [];
@@ -150,7 +152,27 @@ export function battle():
 
           knife.angle = angle;
 
-          attacks.push({s: knife, destroy: false});
+          const offset = Date.now() - shootStart - delay;
+
+          const distances = [
+            2949,
+            3882,
+            4883,
+            5785
+          ].map((x) => Math.abs(x - offset));
+
+          distances.sort();
+
+          const closest = distances[0];
+
+          let speed;
+          if (closest > 100) {
+            speed = 10;
+          } else {
+            speed = 10 + Math.round(10 *((100 - closest) / 100))
+          }
+
+          attacks.push({s: knife, destroy: false, speed});
         }
       })
 
@@ -203,8 +225,8 @@ export function battle():
       let remove = false;
 
       for (const knife of attacks) {
-        knife.s.x += Math.cos(Phaser.Math.DegToRad(knife.s.angle)) * 15;
-        knife.s.y += Math.sin(Phaser.Math.DegToRad(knife.s.angle)) * 15;
+        knife.s.x += Math.cos(Phaser.Math.DegToRad(knife.s.angle)) * knife.speed;
+        knife.s.y += Math.sin(Phaser.Math.DegToRad(knife.s.angle)) * knife.speed;
 
         const collides = this.physics.collide(knife.s, enemy.s);
         const outside = knife.s.x < 0 || knife.s.y > 800 || knife.s.y < 0 || knife.s.y > 600;
@@ -261,16 +283,7 @@ export function battle():
             endAt: animationTimer + 60,
             text: 'Caw caaw'
           }
-        }
-      }
-
-      if (typeof turn.endAt === "number" && animationTimer >= turn.endAt) {
-        if (turn.type === 'effect') {
-          turn = {
-            type: 'shoot',
-            text: 'Click to shoot',
-            shots: 5,
-          }
+          shootStart = Date.now();
         }
       }
 
@@ -325,11 +338,16 @@ export function battle():
           clearPlayedNotes(playedNotes);
           song = undefined;
 
-          turn = {
-            type: 'shoot',
-            shots: 4,
-            text,
-          }
+          setTimeout(() => {
+            this.sound.play('knifeSong');
+            shootStart = Date.now();
+
+            turn = {
+              type: 'shoot',
+              shots: 7,
+              text,
+            }
+          }, 3000)
         }
       }
 
