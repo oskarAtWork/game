@@ -1,26 +1,26 @@
-import { Sheet } from "./sheet";
+import { Sheet } from "../sheet";
 
 export type ViolinString = 'G' | 'D' | 'A' | 'E';
 
+export type SongNames = 'skaningen' | 'sovningen';
+
 type InternalSong = {
-  name: 'skaningen',
+  name: SongNames;
   endsAt: number;
   startsAt: number;
-  fullEnd: number;
   notes: string;
   timings: number[];
 };
 
 export type Song = {
-  name: 'skaningen',
+  name: SongNames;
   endsAt: number;
   startsAt: number;
-  fullEnd: number;
   notes: Phaser.GameObjects.Image[];
   timings: number[];
 }
 
-function createSong(internalSong: InternalSong, scene: Phaser.Scene, sheet: Sheet): Song {
+export function createSong(internalSong: InternalSong, scene: Phaser.Scene, sheet: Sheet): Song {
   const notes = internalSong.notes.split('');
   if (notes.length !== internalSong.timings.length) {
     const errorMessage =`notes length is ${notes.length} but timings length is ${internalSong.timings.length} for song ${internalSong.name}`;
@@ -47,7 +47,6 @@ function createSong(internalSong: InternalSong, scene: Phaser.Scene, sheet: Shee
     name: internalSong.name,
     startsAt: internalSong.startsAt,
     endsAt: internalSong.endsAt,
-    fullEnd: internalSong.fullEnd,
     notes: combined,
     timings: internalSong.timings,
   };
@@ -83,26 +82,6 @@ function noteToY(char: string) {
     return null;
   }
 }
-
-export const skaningen = (scene: Phaser.Scene, sheet: Sheet): Song => createSong({
-  name: 'skaningen',
-  notes: '§2§1312423',
-  timings: [
-    114, // first beat
-    131,
-    140,
-    148, // second beat
-    173,
-    177,
-    182, // third beat
-    211,
-    215,
-    217, // fourth beat
-  ],
-  startsAt: 114,
-  endsAt: 328,
-  fullEnd: 548,
-}, scene, sheet);
 
 const MIN_DISTANCE = 100;
 
@@ -172,10 +151,6 @@ export function scoreSong(
     }
   }
 
-  console.log(unused)
   score -= unused.filter((f) => !!f).length * 0.5;
-
-  console.log(score, song.notes.length)
-
   return Math.max(1, score) / song.notes.length;
 }

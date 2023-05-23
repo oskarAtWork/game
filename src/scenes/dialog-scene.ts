@@ -4,7 +4,8 @@ import { Scene, getCurrentLevel, goToNextScene } from '../progression';
 import { Action, EnterAction, Line, isEnterAction } from '../dialogue_script/scene-utils';
 import { DialogPerson, Names, createPerson, preloadPeople, updatePerson, xPosition, yPosition } from '../dialog-person';
 import { animation_weave } from '../animations';
-import { Song, skaningen } from '../songs';
+import { skaningen } from '../songs/songs';
+import { Song } from '../songs/song-utils';
 import { Sheet, createSheet } from '../sheet';
 import { animationRecording } from '../animation-recording';
 import { preload } from '../preload/preload';
@@ -75,9 +76,7 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
       }
 
       preload(this);
-      //this.load.image(backgroundUrl, backgroundUrl);
       this.load.image(level.background, level.background);
-      console.log(level.background);
       preloadPeople(this);
     },
     create() {

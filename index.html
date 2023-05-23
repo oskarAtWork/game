@@ -7,15 +7,22 @@
     <title>Oskar and Molly's Game</title>
   </head>
   <body>
-    <h1>The travels of Adam</h1>
-    <p id="keypresses"></p>
+
     <div class="window-controls">
       <button onclick="_game.scale.toggleFullscreen()">fullscreen</button>
       <button onclick="_game.sound.mute = !_game.sound.mute">mute</button>
       <button onclick="window.location.reload(true)">refresh</button>
+      <div id="delay-container">
+        <div>Delay</div>
+        <input type="range" id="delay" min="0" max="300" value="0"/>
+      </div>
     </div>
+
     <div id="app"></div>
+
     <canvas width="100" height="100" id="mouse-tracker"></canvas>
+
+
     <p id="result"></p>
     <script type="module" src="/src/main.ts"></script>
   </body>

@@ -5,12 +5,14 @@ import knifeUrl from '../../assets/knife.png';
 
 
 import { displayEnemyStats, Enemy } from "../enemy";
-import { clearPlayedNotes, clearSong, playNote, scoreSong, skaningen, Song } from "../songs";
+import { skaningen, sovningen } from "../songs/songs";
+import { clearPlayedNotes, clearSong, playNote, scoreSong, Song } from "../songs/song-utils";
 import { createSheet, Sheet } from "../sheet";
 import { preload } from "../preload/preload";
 import { getCurrentLevel, goToNextScene } from "../progression";
 import { createPerson, DialogPerson, preloadPeople, updatePerson } from "../dialog-person";
 import { animation_demo, animation_long_floaty} from "../animations";
+import { preloadSongs } from "../preload/preload-song";
 
 type Turn = {
   type: 'select';
@@ -48,6 +50,12 @@ const TURN_SELECT = {
 
 export const battleSceneKey = "BattleScene" as const;
 
+let delay = 0;
+
+document.getElementById('range')?.addEventListener('change', (ev) => {
+  delay = Number.parseInt((ev.target as HTMLInputElement).value);
+});
+
 export function battle():
   | Phaser.Types.Scenes.SettingsConfig
   | Phaser.Types.Scenes.CreateSceneFromObjectConfig {
@@ -57,7 +65,7 @@ export function battle():
   let sheet: Sheet;
   let line: {
     s: Phaser.GameObjects.Image;
-    t: number;
+    start: number; //ms gotten from Date(0)
   };
   let song: undefined | Song;
   let textObj: Phaser.GameObjects.Text;
@@ -73,6 +81,7 @@ export function battle():
     key: battleSceneKey,
     preload() {
       preload(this);
+      preloadSongs(this);
       preloadPeople(this);
       this.load.image('background', backgroundUrl);
       this.load.image('heart', heartUrl);
@@ -95,7 +104,7 @@ export function battle():
 
       line = {
         s: this.add.image(300, 20, 'line'),
-        t: 0,
+        start: 0,
       };
       line.s.setOrigin(0, 0);
       line.s.setVisible(false);
@@ -158,14 +167,14 @@ export function battle():
             this.sound.play('gasp');
             this.scene.start(battleSceneKey);
             return;
-          } else if (key === 'D') {
-            this.sound.play('skaningen');
+          } else if (key === 'D' || key === 'G') {
+            this.sound.play(key === 'D' ? 'skaningen' : 'sovningen');
 
             clearPlayedNotes(playedNotes);
-            song = skaningen(this, sheet);
+            song = key === 'D' ? skaningen(this, sheet) : sovningen(this, sheet);
 
             line.s.setVisible(true);
-            line.t = 0;
+            line.start = Date.now();
             turn = {
               type: 'play',
               text: 'Play using\n§1234567890'
@@ -174,7 +183,8 @@ export function battle():
           }
         }
 
-        const noteInfo = playNote(line.t, ev.key, song, sheet);
+        const now = Date.now() - line.start - delay;
+        const noteInfo = playNote(now, ev.key, song, sheet);
 
         if (noteInfo) {
           const note = { s: this.add.image(noteInfo.x, noteInfo.y, "note"), hit: noteInfo.hit };
@@ -190,7 +200,6 @@ export function battle():
     },
     update() {
       animationTimer++;
-
       let remove = false;
 
       for (const knife of attacks) {
@@ -266,32 +275,46 @@ export function battle():
       }
 
       sheet.s.setVisible(turn.type === 'play');
-
       updatePerson(player, turn.type === 'play', animationTimer, animation_demo)
 
       if (song) {
-        line.t += 1;
+        const timeSinceStart = Date.now() - line.start - delay;
 
         line.s.x =
           sheet.innerX() +
           sheet.innerWidth() *
-            ((line.t - song.startsAt) / (song.endsAt - song.startsAt));
+            ((timeSinceStart - song.startsAt) / (song.endsAt - song.startsAt));
 
-        if (line.t > song.endsAt) {
+        if (timeSinceStart > song.endsAt) {
           line.s.setVisible(false);
           const score = scoreSong(playedNotes, song);
 
           let text: string;
 
-          if (score > 0.7) {
-            text = 'Very moving';
-            enemy.fearful = 'much';
-          } else if (score > 0.3) {
-            text = 'It had some effect'
-            enemy.fearful = 'some';
+          if (song.name === 'skaningen') {
+            if (score > 0.7) {
+              text = 'Very moving';
+              enemy.fearful = 'much';
+            } else if (score > 0.3) {
+              text = 'It had some effect'
+              enemy.fearful = 'some';
+            } else {
+              text = 'Not so effective'
+              enemy.fearful = 'none';
+            }
+          } else if (song.name === 'sovningen') {
+            if (score > 0.7) {
+              text = 'Very moving';
+              enemy.sleepy = 'much';
+            } else if (score > 0.3) {
+              text = 'It had some effect'
+              enemy.sleepy = 'some';
+            } else {
+              text = 'Not so effective'
+              enemy.sleepy = 'none';
+            }
           } else {
-            text = 'Not so effective'
-            enemy.fearful = 'none';
+            throw Error('Unknown song');
           }
 
           if (song.name === "skaningen") {
@@ -317,8 +340,9 @@ export function battle():
         enemy.s.x += 10;
         enemy.s.flipX = true;
       } else {
-        enemy.s.x = enemy.sx + animation_long_floaty[animationTimer % animation_long_floaty.length][0] * 2
-        enemy.s.y = enemy.sy + animation_long_floaty[animationTimer % animation_long_floaty.length][1] * 3
+        const sp = enemy.sleepy === 'some' || enemy.sleepy === 'much' ? 1 : 3;
+        enemy.s.x = enemy.sx + animation_long_floaty[animationTimer % animation_long_floaty.length][0] * sp;
+        enemy.s.y = enemy.sy + animation_long_floaty[animationTimer % animation_long_floaty.length][1] * sp;
       }
     },
   };

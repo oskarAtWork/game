@@ -6,16 +6,12 @@ import scene1 from './dialogue_script/scene1';
 import scene2 from './dialogue_script/scene2';
 import scene3 from './dialogue_script/scene3';
 
-
-
 type SceneKey = typeof dialogSceneKey | typeof battleSceneKey;
 export type Scene = typeof scene1 | typeof scene2;
 
 let x = window.location.pathname;
 
 export let currentLevel = x.startsWith('/') && Number.parseInt(x[1]) ? Number.parseInt(x[1]) : 0;
-
-
 
 export type Level = {
   sceneKey: typeof dialogSceneKey;
