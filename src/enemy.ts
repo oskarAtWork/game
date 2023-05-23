@@ -21,6 +21,7 @@ sleepy ${enemy.sleepy}
 fearful ${enemy.fearful}
 groovy ${enemy.groovy}
 confused ${enemy.confused ? 'yes' : 'no'}
+health: ${enemy.health}
   `.trim();
 
   enemy.text.text = str;

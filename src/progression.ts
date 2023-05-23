@@ -11,7 +11,11 @@ import scene3 from './dialogue_script/scene3';
 type SceneKey = typeof dialogSceneKey | typeof battleSceneKey;
 export type Scene = typeof scene1 | typeof scene2;
 
-export let currentLevel = 1;
+let x = window.location.pathname;
+
+export let currentLevel = x.startsWith('/') && Number.parseInt(x[1]) ? Number.parseInt(x[1]) : 0;
+
+
 
 export type Level = {
   sceneKey: typeof dialogSceneKey;

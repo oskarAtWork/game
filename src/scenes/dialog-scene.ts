@@ -1,18 +1,15 @@
 import 'phaser';
 // import backgroundUrl from '../../assets/livingroom_background.png';
 import { Scene, getCurrentLevel, goToNextScene } from '../progression';
-import { Line } from '../dialogue_script/scene-utils';
-import { DialogPerson, Names, createPerson, preloadPeople, updatePerson } from '../dialog-person';
-import { animation_loopdiloop, animation_upAndDown, animation_weave } from '../animations';
+import { Action, EnterAction, Line, isEnterAction } from '../dialogue_script/scene-utils';
+import { DialogPerson, Names, createPerson, preloadPeople, updatePerson, xPosition, yPosition } from '../dialog-person';
+import { animation_weave } from '../animations';
 import { Song, skaningen } from '../songs';
 import { Sheet, createSheet } from '../sheet';
 import { animationRecording } from '../animation-recording';
 import { preload } from '../preload/preload';
-// import lr from '../../assets/forest_background.png';
 
 export const dialogSceneKey = 'DialogScene' as const;
-
-
 
 type LearnState = {
   sheet: Sheet;
@@ -31,6 +28,37 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
   let currentDialog: Phaser.GameObjects.Text;
   let characters: Map<Names, DialogPerson>;
 
+  const onNewSpokenLine = (context: Phaser.Scene, speaker: Names, otherAction: Action | undefined) => {
+    let person = characters.get(speaker)!!;
+
+    if (otherAction === 'enter_bottom' || otherAction === 'enter_top') {
+      person.target_y = yPosition();
+    }
+
+    if (otherAction === 'enter_left' || otherAction === 'enter_right') {
+      person.target_x = xPosition(speaker);
+    }
+    if (otherAction === 'exit') {
+      person.target_y = -30;
+    }
+
+    if (otherAction === 'sheet') {
+      const sheet = createSheet(context);
+      learnState = {
+        sheet,
+        line: {
+          s: context.add.image(-1000, sheet.s.y, 'line'),
+          t: 0,
+        },
+        currentNoteIndex: 0,
+        song: skaningen(context, sheet),
+        playedNotes: [],
+      }
+
+      learnState.line.s.setOrigin(0, 0);
+      learnState.line.s.setVisible(false);
+    }
+  }
 
   let scene: Scene;
   let currentLineIndex: number;
@@ -64,30 +92,47 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
         throw Error('Oh no, wrong level');
       }
 
-      const BASE_LINE = 470;
       this.add.image(0, 0, level.background).setOrigin(0, 0);
 
       scene = level.dialog;
+
       for (const line of scene) {
         if (!line.speaker) continue;
         if (characters.has(line.speaker)) continue;
 
-        const enters = scene.some((l) => line.speaker === l.speaker && l.otherAction === 'enter');
-        console.log('RTYU');
-        characters.set(line.speaker, createPerson(this, line.speaker, 100, enters ? 1000 : 300));
+        const enters = scene.find((s): s is Line<EnterAction> => s.speaker === line.speaker && isEnterAction(line))
+        characters.set(line.speaker, createPerson(this, line.speaker, enters?.otherAction));
       }
 
- 
-
       const context = this;
+
+      if (scene[0].speaker) {
+        onNewSpokenLine(context, scene[0].speaker, scene[0].otherAction)
+      }
 
       this.input.keyboard!!.on('keydown', function (ev: KeyboardEvent) {
         ev.preventDefault();
         let switched = false;
 
-        if (ev.key === ' ') {
-          currentLineIndex += 1;
+        const resp = scene[currentLineIndex].response;
+
+        if (ev.key === ' ' && !resp) {
+          const isAnswer = scene[currentLineIndex-1]?.response;
+
+          currentLineIndex += isAnswer ? 2 : 1;
           switched = true;
+        }
+
+        if (resp) {
+          for (let i = 0; i < resp.options.length; i++) {
+            if (ev.key === (i+1).toString()) {
+              if (i === resp.correctIndex) {
+                currentLineIndex += 1;
+              } else {
+                currentLineIndex += 2;
+              }
+            }
+          }
         }
 
         if (ev.key === 'Backspace' && okToBack(scene, currentLineIndex)) {
@@ -96,47 +141,15 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
           switched = true;
         }
 
-        if (ev.key.toUpperCase() === 'S') {
-          context.scene.restart();
-        }
-
         if (switched) {
           const line = scene[currentLineIndex];
+
 
           if (line) {
             const { speaker, otherAction } = line;
 
             if (speaker) {
-              let person = characters.get(speaker)!!;
-
-              if (otherAction === 'enter') {
-                person.target_y = BASE_LINE;
-
-              }
-              if (otherAction === 'exit') {
-                person.target_y = -1000;
-
-              }
-
-
-
-            }
-
-            if (otherAction === 'sheet') {
-              const sheet = createSheet(context);
-              learnState = {
-                sheet,
-                line: {
-                  s: context.add.image(-1000, sheet.s.y, 'line'),
-                  t: 0,
-                },
-                currentNoteIndex: 0,
-                song: skaningen(context, sheet),
-                playedNotes: [],
-              }
-
-              learnState.line.s.setOrigin(0, 0);
-              learnState.line.s.setVisible(false);
+              onNewSpokenLine(context, speaker, otherAction);
             }
           } else {
             goToNextScene(context.scene);
@@ -168,13 +181,31 @@ export function dialog(): Phaser.Types.Scenes.SettingsConfig | Phaser.Types.Scen
 
       if (currentLine) {
         if (isDialog) {
-          currentDialog.text = currentLine.speaker + ': ' + currentLine.line;
+
+          let txt = speaker(scene, currentLineIndex) + currentLine.line;
+
+          currentLine.response?.options.forEach((element, i) => {
+            txt += `\n${i+1}. ${element}`;
+          });
+
+          currentDialog.text = txt;
         } else {
           currentDialog.text = currentLine.line;
         }
       }
     },
   }
+}
+
+function speaker(scene: Scene, current: number) {
+  const currentLine = scene[current];
+  const introduction = scene.findIndex((line) => line.otherAction === 'introduce' && line.speaker === currentLine.speaker);
+
+  if (introduction <= current) {
+    return currentLine.speaker + ': ';
+  }
+
+  return '???: ';
 }
 
 
