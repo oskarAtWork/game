@@ -12,6 +12,7 @@ export function preload(scene: Phaser.Scene) {
   // images
   scene.load.image('player', playerUrl);
   scene.load.image('enemy', enemyUrl);
+  scene.load.image('enemy', enemyUrl);
   scene.load.image('line', lineUrl);
 
   // so that we can easily refer to it in other files easily (level file)
