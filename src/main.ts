@@ -52,6 +52,7 @@ window.addEventListener('load', () => {
 declare global {
   interface Console {
     htmlLog: (str: any) => void;
+    htmlLogAppend: (str: any) => void;
   }
 }
 
@@ -60,5 +61,13 @@ console.htmlLog = (str: any) => {
     document.getElementById('debug')!!.innerHTML = JSON.stringify(str);
   } else {
     document.getElementById('debug')!!.innerHTML = str?.toString();
+  }
+}
+
+console.htmlLogAppend = (str: any) => {
+  if (typeof str === 'object') {
+    document.getElementById('debug')!!.innerHTML += ' ' + JSON.stringify(str);
+  } else {
+    document.getElementById('debug')!!.innerHTML += ' ' + str?.toString();
   }
 }

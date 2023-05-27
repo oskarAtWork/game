@@ -2,7 +2,7 @@ import "phaser";
 import backgroundUrl from "../../assets/forest_background.png";
 import heartUrl from "../../assets/heart.png";
 import knifeUrl from "../../assets/knife.png";
-import explosionUrl from "../../assets/explosion.webp";
+import explosionUrl from "../../assets/explosion.png";
 
 import { displayEnemyStats, Enemy } from "../enemy";
 import { skaningen, sovningen } from "../songs/songs";
@@ -25,30 +25,26 @@ import {
 import { animation_demo, animation_long_floaty } from "../animations";
 import { preloadSongs } from "../preload/preload-song";
 
-
-const knifeSongTimings = [2949, 3882, 4883, 5785];
-const knifeSongEnd = 6200;
+const knifeSongTimings = [2949, 3882, 4883, 5785, 6837, 7571, 8597];
+const knifeSongEnd = 9000;
 
 const throwPositionX = 250;
 const throwPositionY = 400;
 
 const howClose = (knifeT: number) => {
-  const a = knifeSongTimings.map((x) =>
-    Math.abs(x-knifeT)
-  );
+  const a = knifeSongTimings.map((x) => Math.abs(x - knifeT));
 
-  a.sort((a, b) => a - b)
+  a.sort((a, b) => a - b);
 
   const smallest = a[0];
-
   const nice = 1000;
 
   if (smallest < nice) {
-    return smallest/nice;
+    return smallest / nice;
   } else {
     return 1;
   }
-}
+};
 
 type Turn =
   | {
@@ -75,7 +71,8 @@ type Turn =
   | {
       type: "opponent";
       text: string;
-      endAt: number;
+      playedEffect: boolean;
+      effectText: string;
       strength: number;
     }
   | {
@@ -86,7 +83,7 @@ type Turn =
 
 const TURN_SELECT = {
   type: "select",
-  text: "Select a violin string",
+  text: "Välj en fiolsträng",
 } satisfies Turn;
 
 export const battleSceneKey = "BattleScene" as const;
@@ -100,7 +97,6 @@ document.getElementById("range")?.addEventListener("change", (ev) => {
 export function battle():
   | Phaser.Types.Scenes.SettingsConfig
   | Phaser.Types.Scenes.CreateSceneFromObjectConfig {
-
   let enemy: Enemy;
   let player: DialogPerson;
   let sheet: Sheet;
@@ -113,7 +109,6 @@ export function battle():
   let playedNotes: { s: Phaser.GameObjects.Image; hit: boolean }[];
 
   let turn: Turn = TURN_SELECT;
-  let previousTurn: Turn | undefined = undefined;
   let hp: Phaser.GameObjects.Image[];
 
   let animationTimer: number;
@@ -142,6 +137,16 @@ export function battle():
     s: Phaser.GameObjects.Sprite;
   }[];
 
+  let context: Phaser.Scene;
+
+  function createExplosion(x: number, y: number) {
+    explosions.push({
+      start: animationTimer,
+      length: 100,
+      s: context.add.sprite(x, y, "explosion"),
+    });
+  }
+
   return {
     key: battleSceneKey,
     preload() {
@@ -152,12 +157,14 @@ export function battle():
       this.load.image("heart", heartUrl);
       this.load.image("knife", knifeUrl);
 
-      this.load.spritesheet('explosion', explosionUrl, {
+      this.load.spritesheet("explosion", explosionUrl, {
         frameWidth: 100,
         frameHeight: 100,
-      })
+      });
     },
     create() {
+      this.game.sound.pauseOnBlur = false;
+      context = this;
       lastT = 0;
       animationTimer = 0;
       playedNotes = [];
@@ -173,7 +180,10 @@ export function battle():
         throw Error("Oh no, wrong level");
       }
 
-      const br = this.add.image(0, 0, "background").setOrigin(0, 0).setInteractive();
+      const br = this.add
+        .image(0, 0, "background")
+        .setOrigin(0, 0)
+        .setInteractive();
       sheet = createSheet(this);
 
       line = {
@@ -214,16 +224,60 @@ export function battle():
         if (turn.type === "shoot" && turn.shots > 0) {
           turn = { ...turn, shots: turn.shots - 1 };
 
-          const knife = this.physics.add.sprite(throwPositionX, throwPositionY, "knife");
+          const knife = this.physics.add.sprite(
+            throwPositionX,
+            throwPositionY,
+            "knife"
+          );
 
-          knife.rotation = knifeState.angle + Math.random() * knifeState.spread * 2 - knifeState.spread;
+          knife.rotation =
+            knifeState.angle +
+            Math.random() * knifeState.spread * 2 -
+            knifeState.spread;
 
           attacks.push({ s: knife, destroy: false, speed: 12 });
         }
       });
 
-      this.input.keyboard?.on("keydown", (ev: { key: string }) => {
+      this.input.keyboard?.on("keydown", (ev: KeyboardEvent) => {
         const key = ev.key.toUpperCase();
+        ev.preventDefault();
+
+        if (turn.type === 'play' && ev.key === ' ') {
+          if (!song || getT() > song.endsAt) {
+            this.sound.play("knifeSong");
+            lastT = Date.now();
+
+            turn = {
+              type: "shoot",
+              shots: 7,
+              text: 'Klicka för att skjuta (i takt)'
+            };
+          }
+          return;
+        }
+
+        if (turn.type === 'opponent') {
+          if (!turn.playedEffect) {
+            turn.playedEffect = true;
+
+            if (turn.type === "opponent") {
+              for (let i = 0; i < turn.strength; i++) {
+                const heart = hp.pop();
+    
+                if (heart) {
+                  createExplosion(heart.x, heart.y)
+                }
+    
+                heart?.destroy();
+              }
+            }
+          } else {
+            turn = TURN_SELECT;
+          }
+
+          return;
+        }
 
         if (turn.type === "win" && ev.key === " ") {
           goToNextScene(this.scene);
@@ -270,9 +324,15 @@ export function battle():
         angleLower: 0,
         angleUpper: 0,
         spread: 0,
-        aimLineUpper: this.add.line().setStrokeStyle(3, 0xffffff).setOrigin(0, 0),
-        aimLineLower: this.add.line().setStrokeStyle(3, 0xffffff).setOrigin(0, 0)
-      }
+        aimLineUpper: this.add
+          .line()
+          .setStrokeStyle(3, 0xffffff)
+          .setOrigin(0, 0),
+        aimLineLower: this.add
+          .line()
+          .setStrokeStyle(3, 0xffffff)
+          .setOrigin(0, 0),
+      };
 
       textObj = this.add
         .text(400, 500, "", {
@@ -289,9 +349,11 @@ export function battle():
       {
         const doNotDestroy: typeof explosions = [];
         for (const explosion of explosions) {
-          const i = Math.floor(36 * (animationTimer - explosion.start) * (1 / explosion.length));
-          
-          if (i < 36) {
+          const i = Math.floor(
+            10 * (animationTimer - explosion.start) * (1 / explosion.length)
+          );
+
+          if (i < 10) {
             explosion.s.setFrame(i);
             doNotDestroy.push(explosion);
           } else {
@@ -306,11 +368,16 @@ export function battle():
 
       // knife stuff
       {
-        knifeState.aimLineLower.setVisible(turn.type === 'shoot');
-        knifeState.aimLineUpper.setVisible(turn.type === 'shoot');
+        knifeState.aimLineLower.setVisible(turn.type === "shoot");
+        knifeState.aimLineUpper.setVisible(turn.type === "shoot");
 
         const dist = howClose(getT());
-        const angle = Phaser.Math.Angle.Between(throwPositionX, throwPositionY, this.input.x, this.input.y);
+        const angle = Phaser.Math.Angle.Between(
+          throwPositionX,
+          throwPositionY,
+          this.input.x,
+          this.input.y
+        );
 
         const angleLower = angle + dist * Phaser.Math.DegToRad(45);
         const angleUpper = angle - dist * Phaser.Math.DegToRad(45);
@@ -320,43 +387,51 @@ export function battle():
         knifeState.spread = dist * Phaser.Math.DegToRad(45);
         knifeState.angle = angle;
 
-        knifeState.aimLineUpper.setTo(throwPositionX, throwPositionY, throwPositionX + Math.cos(angleUpper) * 1000, throwPositionY + Math.sin(angleUpper) * 1000);
-        knifeState.aimLineLower.setTo(throwPositionX, throwPositionY, throwPositionX + Math.cos(angleLower) * 1000, throwPositionY + Math.sin(angleLower) * 1000);
+        knifeState.aimLineUpper.setTo(
+          throwPositionX,
+          throwPositionY,
+          throwPositionX + Math.cos(angleUpper) * 1000,
+          throwPositionY + Math.sin(angleUpper) * 1000
+        );
+        knifeState.aimLineLower.setTo(
+          throwPositionX,
+          throwPositionY,
+          throwPositionX + Math.cos(angleLower) * 1000,
+          throwPositionY + Math.sin(angleLower) * 1000
+        );
 
         let remove = false;
-      
+
         for (const knife of attacks) {
           knife.s.x +=
             Math.cos(Phaser.Math.DegToRad(knife.s.angle)) * knife.speed;
           knife.s.y +=
             Math.sin(Phaser.Math.DegToRad(knife.s.angle)) * knife.speed;
-  
+
           const collides = this.physics.collide(knife.s, enemy.s);
           const outside =
-            knife.s.x < 0 || knife.s.y > 800 || knife.s.y < 0 || knife.s.y > 600;
-  
+            knife.s.x < 0 ||
+            knife.s.y > 800 ||
+            knife.s.y < 0 ||
+            knife.s.y > 600;
+
           if (collides) {
             enemy.health -= 1;
             displayEnemyStats(enemy);
-            explosions.push({
-              start: animationTimer,
-              length: 100,
-              s: this.add.sprite(knife.s.x, knife.s.y, 'explosion'),
-            })
+            createExplosion(knife.s.x, knife.s.y)
           }
-  
+
           if (collides || outside) {
             knife.s.destroy();
             knife.destroy = true;
             remove = true;
           }
         }
-        
+
         if (remove) {
           attacks = attacks.filter((x) => !x.destroy);
         }
       }
-
 
       if (enemy.health <= 0 && turn.type !== "win") {
         turn = {
@@ -365,35 +440,23 @@ export function battle():
         };
       }
 
-
-      if (previousTurn !== turn) {
-        previousTurn = turn;
-
-        if (turn.type === "shoot") {
-          textObj.text = turn.text + "\nShots left: " + turn.shots;
-        } else {
-          textObj.text = turn.text;
-        }
-      }
-
-      if (turn.type === "opponent") {
-        if (animationTimer >= turn.endAt) {
-          for (let i = 0; i < turn.strength; i++) {
-            const heart = hp.pop();
-            heart?.destroy();
-          }
-
-          turn = TURN_SELECT;
-        }
+      if (turn.type === "shoot") {
+        textObj.text = turn.text + "\nShots left: " + turn.shots;
+      } else if (turn.type === "opponent" && turn.playedEffect) {
+        textObj.text = turn.effectText;
+      }  else {
+        textObj.text = turn.text;
       }
 
       if (turn.type === "shoot") {
-        if (turn.shots === 0 || getT() > knifeSongEnd) {
+        if (getT() > knifeSongEnd) {
           turn = {
             type: "opponent",
             strength: 1,
+            effectText: 'Adam: Aj, det gjorde 1 skada tror jag minsann\n[tryck space]',
             endAt: animationTimer + 60,
-            text: "Caw caaw",
+            playedEffect: false,
+            text: "fågeln: Caw caaw\n[tryck space]",
           };
         }
       }
@@ -415,6 +478,8 @@ export function battle():
             ((timeSinceStart - song.startsAt) / (song.endsAt - song.startsAt));
 
         if (timeSinceStart > song.endsAt) {
+
+
           line.s.setVisible(false);
           const score = scoreSong(playedNotes, song);
 
@@ -422,29 +487,31 @@ export function battle():
 
           if (song.name === "skaningen") {
             if (score > 0.7) {
-              text = "Very moving";
+              text = "Väldigt rörande";
               enemy.fearful = "much";
             } else if (score > 0.3) {
-              text = "It had some effect";
+              text = "Lite effekt ändå";
               enemy.fearful = "some";
             } else {
-              text = "Not so effective";
+              text = "Ingen effekt";
               enemy.fearful = "none";
             }
           } else if (song.name === "sovningen") {
             if (score > 0.7) {
-              text = "Very moving";
+              text = "Väldigt rörande";
               enemy.sleepy = "much";
             } else if (score > 0.3) {
-              text = "It had some effect";
+              text = "Lite effekt ändå";
               enemy.sleepy = "some";
             } else {
-              text = "Not so effective";
+              text = "Ingen effekt";
               enemy.sleepy = "none";
             }
           } else {
             throw Error("Unknown song");
           }
+
+          turn.text = text + '\n[tryck space]';
 
           if (song.name === "skaningen") {
             displayEnemyStats(enemy);
@@ -453,17 +520,6 @@ export function battle():
           clearSong(song);
           clearPlayedNotes(playedNotes);
           song = undefined;
-
-          setTimeout(() => {
-            this.sound.play("knifeSong");
-            lastT = Date.now();
-
-            turn = {
-              type: "shoot",
-              shots: 7,
-              text,
-            };
-          }, 3000);
         }
       }
 

@@ -1,24 +1,27 @@
 import { Sheet } from "../sheet";
 import { Song, createSong } from "./song-utils";
 
+
+
+
 export const skaningen = (scene: Phaser.Scene, sheet: Sheet): Song =>
   createSong(
     {
       name: "skaningen",
       notes: "§2§1312423",
       timings: [
-        2060, // first beat
-        2330,
-        2539,
-        2613, // second beat
-        2896,
-        3038,
-        3180, // third beat
-        3489,
-        3644,
-        3799, // fourth beat
+        1845, // first beat
+        2153,
+        2307,
+        2462, // second beat
+        2750, 
+        2893,
+        3037, // third beat
+        3334, 
+        3478,
+        3632, // fourth beat
       ],
-      startsAt: 2058,
+      startsAt: 1845,
       endsAt: 5536,
     },
     scene,
@@ -30,7 +33,7 @@ export const sovningen = (scene: Phaser.Scene, sheet: Sheet): Song =>
     {
       name: "sovningen",
       notes: "§54312",
-      timings: [2238, 4171, 6376, 6892, 7475, 8081],
+      timings: [2238, 4171, 6104, 6892, 7475, 8081],
       startsAt: 2238,
       endsAt: 10000,
     },

@@ -136,6 +136,7 @@ export function dialog():
       preloadPeople(this);
     },
     create() {
+      this.game.sound.pauseOnBlur = false;
       characters = new Map();
 
       currentLineIndex = 0;
