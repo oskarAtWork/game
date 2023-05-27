@@ -204,7 +204,7 @@ export function battle():
         }),
         sx: enemyImage.x,
         sy: enemyImage.y,
-        health: 20,
+        health: 10,
         confused: "none",
         fearful: "none",
         groovy: "none",
