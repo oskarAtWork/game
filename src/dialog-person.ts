@@ -50,8 +50,8 @@ export function createPerson(scene: Phaser.Scene, name: Names, enterAction?: Ent
   const defX = xPosition(name);
   const defY = yPosition();
 
-  const x = enterAction === 'enter_left' ? -100 : enterAction === 'enter_right' ? 900 : defX;
-  const y = enterAction === 'enter_top' ? -100 : enterAction === 'enter_bottom' ? 900 : defY;
+  const x = enterAction?.from === 'left' ? -100 : enterAction?.from === 'right' ? 900 : defX;
+  const y = enterAction?.from === 'top' ? -100 : enterAction?.from === 'bottom' ? 900 : defY;
 
   return {
     name,

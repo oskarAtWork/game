@@ -10,6 +10,10 @@ body {
   background: linear-gradient(to top, #e55d87, #5fc3e4); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
 }
 
+#debug {
+  position: absolute;
+}
+
 #app {
   color: #ff3c00;
   height: 98%;

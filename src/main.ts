@@ -6,7 +6,6 @@ import { dialog } from './scenes/dialog-scene';
 import { getCurrentLevel } from './progression';
 
 
-
 const GameConfig: Phaser.Types.Core.GameConfig = {
   title: "Molly and Oskar's game",
   url: '',
@@ -49,3 +48,17 @@ window.addEventListener('load', () => {
   // Expose `_game` to allow debugging, mute button and fullscreen button
   (window as any)._game = new Game(GameConfig);
 });
+
+declare global {
+  interface Console {
+    htmlLog: (str: any) => void;
+  }
+}
+
+console.htmlLog = (str: any) => {
+  if (typeof str === 'object') {
+    document.getElementById('debug')!!.innerHTML = JSON.stringify(str);
+  } else {
+    document.getElementById('debug')!!.innerHTML = str?.toString();
+  }
+}

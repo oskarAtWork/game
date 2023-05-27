@@ -2,6 +2,7 @@ import "phaser";
 import backgroundUrl from "../../assets/forest_background.png";
 import heartUrl from "../../assets/heart.png";
 import knifeUrl from "../../assets/knife.png";
+import explosionUrl from "../../assets/explosion.webp";
 
 import { displayEnemyStats, Enemy } from "../enemy";
 import { skaningen, sovningen } from "../songs/songs";
@@ -23,6 +24,31 @@ import {
 } from "../dialog-person";
 import { animation_demo, animation_long_floaty } from "../animations";
 import { preloadSongs } from "../preload/preload-song";
+
+
+const knifeSongTimings = [2949, 3882, 4883, 5785];
+const knifeSongEnd = 6200;
+
+const throwPositionX = 250;
+const throwPositionY = 400;
+
+const howClose = (knifeT: number) => {
+  const a = knifeSongTimings.map((x) =>
+    Math.abs(x-knifeT)
+  );
+
+  a.sort((a, b) => a - b)
+
+  const smallest = a[0];
+
+  const nice = 1000;
+
+  if (smallest < nice) {
+    return smallest/nice;
+  } else {
+    return 1;
+  }
+}
 
 type Turn =
   | {
@@ -74,14 +100,14 @@ document.getElementById("range")?.addEventListener("change", (ev) => {
 export function battle():
   | Phaser.Types.Scenes.SettingsConfig
   | Phaser.Types.Scenes.CreateSceneFromObjectConfig {
-  let shootStart: number;
+
   let enemy: Enemy;
   let player: DialogPerson;
   let sheet: Sheet;
   let line: {
     s: Phaser.GameObjects.Image;
-    start: number; //ms gotten from Date(0)
   };
+
   let song: undefined | Song;
   let textObj: Phaser.GameObjects.Text;
   let playedNotes: { s: Phaser.GameObjects.Image; hit: boolean }[];
@@ -89,11 +115,31 @@ export function battle():
   let turn: Turn = TURN_SELECT;
   let previousTurn: Turn | undefined = undefined;
   let hp: Phaser.GameObjects.Image[];
+
   let animationTimer: number;
+  let lastT: number;
+
+  const getT = () => Date.now() - delay - lastT;
+
   let attacks: {
     s: Phaser.GameObjects.Image;
     destroy: boolean;
     speed: number;
+  }[];
+
+  let knifeState: {
+    angle: number;
+    angleUpper: number;
+    angleLower: number;
+    aimLineUpper: Phaser.GameObjects.Line;
+    aimLineLower: Phaser.GameObjects.Line;
+    spread: number;
+  };
+
+  let explosions: {
+    start: number;
+    length: number;
+    s: Phaser.GameObjects.Sprite;
   }[];
 
   return {
@@ -105,13 +151,19 @@ export function battle():
       this.load.image("background", backgroundUrl);
       this.load.image("heart", heartUrl);
       this.load.image("knife", knifeUrl);
+
+      this.load.spritesheet('explosion', explosionUrl, {
+        frameWidth: 100,
+        frameHeight: 100,
+      })
     },
     create() {
-      shootStart = 0;
+      lastT = 0;
       animationTimer = 0;
       playedNotes = [];
       hp = [];
       attacks = [];
+      explosions = [];
       const level = getCurrentLevel();
 
       if (level.sceneKey !== "BattleScene") {
@@ -121,12 +173,11 @@ export function battle():
         throw Error("Oh no, wrong level");
       }
 
-      const br = this.add.image(0, 0, "background").setOrigin(0, 0);
+      const br = this.add.image(0, 0, "background").setOrigin(0, 0).setInteractive();
       sheet = createSheet(this);
 
       line = {
         s: this.add.image(300, 20, "line"),
-        start: 0,
       };
       line.s.setOrigin(0, 0);
       line.s.setVisible(false);
@@ -159,36 +210,15 @@ export function battle():
         hp.push(this.add.image(20 + i * 30, 460, "heart"));
       }
 
-      br.setInteractive().on("pointerdown", (ev: Phaser.Input.Pointer) => {
+      br.on("pointerdown", () => {
         if (turn.type === "shoot" && turn.shots > 0) {
           turn = { ...turn, shots: turn.shots - 1 };
-          const y = player.y - 120;
-          const knife = this.physics.add.sprite(player.x, y, "knife");
 
-          const angle =
-            Phaser.Math.Angle.BetweenPoints({ x: player.x, y }, ev) *
-            Phaser.Math.RAD_TO_DEG;
+          const knife = this.physics.add.sprite(throwPositionX, throwPositionY, "knife");
 
-          knife.angle = angle;
+          knife.rotation = knifeState.angle + Math.random() * knifeState.spread * 2 - knifeState.spread;
 
-          const offset = Date.now() - shootStart - delay;
-
-          const distances = [2949, 3882, 4883, 5785].map((x) =>
-            Math.abs(x - offset)
-          );
-
-          distances.sort();
-
-          const closest = distances[0];
-
-          let speed;
-          if (closest > 100) {
-            speed = 10;
-          } else {
-            speed = 10 + Math.round(10 * ((100 - closest) / 100));
-          }
-
-          attacks.push({ s: knife, destroy: false, speed });
+          attacks.push({ s: knife, destroy: false, speed: 12 });
         }
       });
 
@@ -213,7 +243,7 @@ export function battle():
               key === "D" ? skaningen(this, sheet) : sovningen(this, sheet);
 
             line.s.setVisible(true);
-            line.start = Date.now();
+            lastT = Date.now();
             turn = {
               type: "play",
               text: "Play using\n§1234567890",
@@ -222,7 +252,7 @@ export function battle():
           }
         }
 
-        const now = Date.now() - line.start - delay;
+        const now = Date.now() - lastT - delay;
         const noteInfo = playNote(now, ev.key, song, sheet);
 
         if (noteInfo) {
@@ -234,6 +264,16 @@ export function battle():
         }
       });
 
+      // ui
+      knifeState = {
+        angle: 0,
+        angleLower: 0,
+        angleUpper: 0,
+        spread: 0,
+        aimLineUpper: this.add.line().setStrokeStyle(3, 0xffffff).setOrigin(0, 0),
+        aimLineLower: this.add.line().setStrokeStyle(3, 0xffffff).setOrigin(0, 0)
+      }
+
       textObj = this.add
         .text(400, 500, "", {
           align: "center",
@@ -244,29 +284,79 @@ export function battle():
     },
     update() {
       animationTimer++;
-      let remove = false;
 
-      for (const knife of attacks) {
-        knife.s.x +=
-          Math.cos(Phaser.Math.DegToRad(knife.s.angle)) * knife.speed;
-        knife.s.y +=
-          Math.sin(Phaser.Math.DegToRad(knife.s.angle)) * knife.speed;
-
-        const collides = this.physics.collide(knife.s, enemy.s);
-        const outside =
-          knife.s.x < 0 || knife.s.y > 800 || knife.s.y < 0 || knife.s.y > 600;
-
-        if (collides) {
-          enemy.health -= 1;
-          displayEnemyStats(enemy);
+      // explosions
+      {
+        const doNotDestroy: typeof explosions = [];
+        for (const explosion of explosions) {
+          const i = Math.floor(36 * (animationTimer - explosion.start) * (1 / explosion.length));
+          
+          if (i < 36) {
+            explosion.s.setFrame(i);
+            doNotDestroy.push(explosion);
+          } else {
+            explosion.s.destroy();
+          }
         }
 
-        if (collides || outside) {
-          knife.s.destroy();
-          knife.destroy = true;
-          remove = true;
+        if (doNotDestroy.length < explosions.length) {
+          explosions = doNotDestroy;
         }
       }
+
+      // knife stuff
+      {
+        knifeState.aimLineLower.setVisible(turn.type === 'shoot');
+        knifeState.aimLineUpper.setVisible(turn.type === 'shoot');
+
+        const dist = howClose(getT());
+        const angle = Phaser.Math.Angle.Between(throwPositionX, throwPositionY, this.input.x, this.input.y);
+
+        const angleLower = angle + dist * Phaser.Math.DegToRad(45);
+        const angleUpper = angle - dist * Phaser.Math.DegToRad(45);
+
+        knifeState.angleLower = angleLower;
+        knifeState.angleUpper = angleUpper;
+        knifeState.spread = dist * Phaser.Math.DegToRad(45);
+        knifeState.angle = angle;
+
+        knifeState.aimLineUpper.setTo(throwPositionX, throwPositionY, throwPositionX + Math.cos(angleUpper) * 1000, throwPositionY + Math.sin(angleUpper) * 1000);
+        knifeState.aimLineLower.setTo(throwPositionX, throwPositionY, throwPositionX + Math.cos(angleLower) * 1000, throwPositionY + Math.sin(angleLower) * 1000);
+
+        let remove = false;
+      
+        for (const knife of attacks) {
+          knife.s.x +=
+            Math.cos(Phaser.Math.DegToRad(knife.s.angle)) * knife.speed;
+          knife.s.y +=
+            Math.sin(Phaser.Math.DegToRad(knife.s.angle)) * knife.speed;
+  
+          const collides = this.physics.collide(knife.s, enemy.s);
+          const outside =
+            knife.s.x < 0 || knife.s.y > 800 || knife.s.y < 0 || knife.s.y > 600;
+  
+          if (collides) {
+            enemy.health -= 1;
+            displayEnemyStats(enemy);
+            explosions.push({
+              start: animationTimer,
+              length: 100,
+              s: this.add.sprite(knife.s.x, knife.s.y, 'explosion'),
+            })
+          }
+  
+          if (collides || outside) {
+            knife.s.destroy();
+            knife.destroy = true;
+            remove = true;
+          }
+        }
+        
+        if (remove) {
+          attacks = attacks.filter((x) => !x.destroy);
+        }
+      }
+
 
       if (enemy.health <= 0 && turn.type !== "win") {
         turn = {
@@ -275,9 +365,6 @@ export function battle():
         };
       }
 
-      if (remove) {
-        attacks = attacks.filter((x) => !x.destroy);
-      }
 
       if (previousTurn !== turn) {
         previousTurn = turn;
@@ -301,14 +388,13 @@ export function battle():
       }
 
       if (turn.type === "shoot") {
-        if (turn.shots === 0) {
+        if (turn.shots === 0 || getT() > knifeSongEnd) {
           turn = {
             type: "opponent",
             strength: 1,
             endAt: animationTimer + 60,
             text: "Caw caaw",
           };
-          shootStart = Date.now();
         }
       }
 
@@ -321,7 +407,7 @@ export function battle():
       );
 
       if (song) {
-        const timeSinceStart = Date.now() - line.start - delay;
+        const timeSinceStart = getT();
 
         line.s.x =
           sheet.innerX() +
@@ -370,7 +456,7 @@ export function battle():
 
           setTimeout(() => {
             this.sound.play("knifeSong");
-            shootStart = Date.now();
+            lastT = Date.now();
 
             turn = {
               type: "shoot",
@@ -391,8 +477,6 @@ export function battle():
         if (enemy.sleepy === "much") {
           enemy.s.x = enemy.sx;
           enemy.s.y = enemy.sy + 100;
-
-
         } else {
           const sp = enemy.sleepy === "some" ? 1 : 3;
           enemy.s.x =
