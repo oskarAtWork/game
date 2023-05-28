@@ -1,6 +1,6 @@
-import { Boundary } from "./boundary";
+import { Boundary, centerX } from "./boundary";
 import { BirdNames } from "./dialog-person";
-import {Animation} from './animations';
+import {Animation, animation_long_floaty} from './animations';
 
 export type EffectStrength = 'much' | 'some' | 'none';
 
@@ -30,16 +30,34 @@ export const braveBoundary = (): Boundary => ({
   bottom: 375,
 })
 
-export type Enemy = {
+export const ezEnemy = (name: BirdNames, maxHealth: number): EnemyData => {
+  const nb = normalBoundary()
+  const x = centerX(nb)
+  const y = (nb.left + nb.right) / 2
+  return {
+    status: undefined,
+    name,
+    boundary: nb,
+    animation: {
+      from: animation_long_floaty,
+      to: undefined,
+      t: 0,
+    },
+    hasEarMuffs: false,
+    maxHealth,
+    health: maxHealth,
+    speed: 1,
+    x,
+    y
+  }
+}
+
+export type EnemyData = {
   status: {
     strength: EffectStrength;
     type: 'sleepy' | 'fearful';
   } | undefined;
   name: BirdNames;
-  healthBar: {
-    back: Phaser.GameObjects.Rectangle;
-    front: Phaser.GameObjects.Rectangle;
-  }
   boundary: Boundary;
   animation: {
     from: Animation,
@@ -49,11 +67,18 @@ export type Enemy = {
   hasEarMuffs: boolean;
   health: number;
   maxHealth: number;
-  text: Phaser.GameObjects.Text;
-  s: Phaser.GameObjects.Sprite;
   speed: number;
   x: number;
   y: number;
+}
+
+export type Enemy = EnemyData & {
+  s: Phaser.GameObjects.Sprite;
+  healthBar: {
+    back: Phaser.GameObjects.Rectangle;
+    front: Phaser.GameObjects.Rectangle;
+  }
+  text: Phaser.GameObjects.Text;
 }
 
 

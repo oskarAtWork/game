@@ -81,10 +81,11 @@ type Turn =
       text: string;
     };
 
-const TURN_SELECT = (bd: BattleData) => ({
-  type: "select",
-  text: "Välj en fiolsträng: " + bd.strings.join(', ')
-} satisfies Turn);
+const TURN_SELECT = (bd: BattleData) =>
+  ({
+    type: "select",
+    text: "Välj en fiolsträng: " + bd.strings.join(", "),
+  } satisfies Turn);
 
 export const battleSceneKey = "BattleScene" as const;
 
@@ -97,7 +98,7 @@ document.getElementById("range")?.addEventListener("change", (ev) => {
 export function battle():
   | Phaser.Types.Scenes.SettingsConfig
   | Phaser.Types.Scenes.CreateSceneFromObjectConfig {
-  let enemy: Enemy;
+  let enemies: Enemy[];
   let sheet: Sheet;
   let line: {
     s: Phaser.GameObjects.Image;
@@ -243,6 +244,7 @@ export function battle():
     playedNotes = [];
     hp = [];
     attacks = [];
+    enemies = [];
     opponentAttacks = [];
     effects = [];
     const level = getCurrentLevel();
@@ -269,41 +271,30 @@ export function battle():
       s: context.physics.add.image(230, 220, "adam").setScale(0.25),
     };
 
-    const enemyImage = context.physics.add
-      .sprite(560, 220, level.battleData.name, 0)
-      .setScale(0.5);
+    for (let e of level.battleData.enemies) {
+      const enemyImage = context.physics.add
+        .sprite(560, 220, e.name, 0)
+        .setScale(0.5);
 
-    enemy = {
-      s: enemyImage,
-      name: level.battleData.name,
-      text: context.add.text(650, 10, "", {
-        fontSize: "20px",
-        fontFamily: "Helvetica",
-      }),
-      healthBar: {
-        back: context.add
-          .rectangle(0, 0, 100, 10)
-          .setOrigin(0, 0)
-          .setFillStyle(0x000000),
-        front: context.add
-          .rectangle(0, 0, 100, 10)
-          .setOrigin(0, 0)
-          .setFillStyle(0x22ee22),
-      },
-      boundary: normalBoundary(),
-      animation: {
-        from: animation_long_floaty,
-        to: undefined,
-        t: 0,
-      },
-      x: enemyImage.x,
-      y: enemyImage.y,
-      health: 8,
-      maxHealth: 8,
-      status: undefined,
-      hasEarMuffs: false,
-      speed: 1,
-    };
+      enemies.push({
+        ...e,
+        s: enemyImage,
+        text: context.add.text(650, 10, "", {
+          fontSize: "20px",
+          fontFamily: "Helvetica",
+        }),
+        healthBar: {
+          back: context.add
+            .rectangle(0, 0, 100, 10)
+            .setOrigin(0, 0)
+            .setFillStyle(0x000000),
+          front: context.add
+            .rectangle(0, 0, 100, 10)
+            .setOrigin(0, 0)
+            .setFillStyle(0x22ee22),
+        },
+      });
+    }
 
     context.input.keyboard?.on("keydown", (ev: KeyboardEvent) => {
       const key = ev.key.toUpperCase();
@@ -603,15 +594,20 @@ export function battle():
           knife.s.y +=
             Math.sin(Phaser.Math.DegToRad(knife.s.angle)) * knife.speed;
 
-          const collides = this.physics.collide(knife.s, enemy.s);
+          const collides = enemies.find((e) =>
+            this.physics.collide(knife.s, e.s)
+          );
+
           const outside =
             knife.s.x < 0 ||
-            knife.s.y > 800 ||
+            knife.s.x > 800 ||
             knife.s.y < 0 ||
             knife.s.y > 600;
 
+          console.log(!!collides, outside)
+
           if (collides) {
-            enemy.health -= 1;
+            collides.health -= 1;
             createExplosion(knife.s.x, knife.s.y);
           }
 
@@ -627,11 +623,11 @@ export function battle():
         }
       }
 
-      enemy.s.setFrame(
-        enemy.status?.type === "sleepy"
-          ? ENEMY_FRAME_SLEEPY
-          : ENEMY_FRAME_NORMAL
-      );
+      enemies.forEach((e) => {
+        e.s.setFrame(
+          e.status?.type === "sleepy" ? ENEMY_FRAME_SLEEPY : ENEMY_FRAME_NORMAL
+        );
+      });
 
       if (turn.type === "shoot") {
         textObj.text = turn.text + "\nSkott kvar: " + turn.shots;
@@ -650,46 +646,48 @@ export function battle():
             text: "fågeln: Caw caaw",
           };
 
-          if (enemy.name === "biatare") {
-            let r = 11;
-            for (let i = 180 - r * 5; i <= 180 + r * 5; i += r) {
-              createBi(enemy.s.x, enemy.s.y, i);
-            }
-          } else {
-            let strength: number;
+          for (let enemy of enemies) {
+            if (enemy.name === "biatare") {
+              let r = 11;
+              for (let i = 180 - r * 5; i <= 180 + r * 5; i += r) {
+                createBi(enemy.s.x, enemy.s.y, i);
+              }
+            } else {
+              let strength: number;
 
-            if (enemy.status?.type === "sleepy") {
-              if (enemy.status.strength === "much") {
-                turn.text = "Fågeln sov, ingen attack";
-                strength = 0;
-              } else if (enemy.status.strength === "some") {
-                turn.text = "Fågeln gjorde en svag attack (1hp)";
-                strength = 1;
+              if (enemy.status?.type === "sleepy") {
+                if (enemy.status.strength === "much") {
+                  turn.text = "Fågeln sov, ingen attack";
+                  strength = 0;
+                } else if (enemy.status.strength === "some") {
+                  turn.text = "Fågeln gjorde en svag attack (1hp)";
+                  strength = 1;
+                } else {
+                  turn.text = "Arg fågel, 3 hp skada";
+                  strength = 3;
+                }
+              } else if (enemy.status?.type === "fearful") {
+                if (enemy.status.strength === "much" && Math.random() < 0.5) {
+                  turn.text = "Rädd fågel, skakade så mycket att hen missade";
+                  strength = 0;
+                }
+                if (enemy.status.strength === "some" && Math.random() < 0.25) {
+                  turn.text =
+                    "Rätt rädd fågel, skakade så mycket att hen missade";
+                  strength = 0;
+                } else {
+                  turn.text = "Rädd fågel, 3 hp skada";
+                  strength = 3;
+                }
               } else {
                 turn.text = "Arg fågel, 3 hp skada";
                 strength = 3;
               }
-            } else if (enemy.status?.type === "fearful") {
-              if (enemy.status.strength === "much" && Math.random() < 0.5) {
-                turn.text = "Rädd fågel, skakade så mycket att hen missade";
-                strength = 0;
-              }
-              if (enemy.status.strength === "some" && Math.random() < 0.25) {
-                turn.text =
-                  "Rätt rädd fågel, skakade så mycket att hen missade";
-                strength = 0;
-              } else {
-                turn.text = "Rädd fågel, 3 hp skada";
-                strength = 3;
-              }
-            } else {
-              turn.text = "Arg fågel, 3 hp skada";
-              strength = 3;
-            }
 
-            if (strength) {
-              createLightning(player.s.x, player.s.y);
-              hurtPlayer(3);
+              if (strength) {
+                createLightning(player.s.x, player.s.y);
+                hurtPlayer(3);
+              }
             }
           }
         }
@@ -720,42 +718,52 @@ export function battle():
           if (song.name === "skaningen") {
             if (score > 0.7) {
               text = "Väldigt skrämmande";
-              enemy.status = {
-                type: "fearful",
-                strength: "much",
-              };
+              enemies.forEach((enemy) => {
+                enemy.status = {
+                  type: "fearful",
+                  strength: "much",
+                };
+              });
             } else if (score > 0.3) {
               text = "Lite skrämmande ändå";
-              enemy.status = {
-                type: "fearful",
-                strength: "some",
-              };
+              enemies.forEach((enemy) => {
+                enemy.status = {
+                  type: "fearful",
+                  strength: "some",
+                };
+              });
             } else {
               text = "Ingen effekt";
-              enemy.status = {
-                type: "fearful",
-                strength: "none",
-              };
+              enemies.forEach((enemy) => {
+                enemy.status = undefined;
+              });
             }
           } else if (song.name === "sovningen") {
             if (score > 0.7) {
               text = "Väldigt sömnigt";
-              enemy.status = {
-                type: "sleepy",
-                strength: "much",
-              };
+
+              enemies.forEach((enemy) => {
+                enemy.status = {
+                  type: "sleepy",
+                  strength: "much",
+                };
+              });
             } else if (score > 0.3) {
               text = "Lite trött verkar fågeln bli";
-              enemy.status = {
-                type: "sleepy",
-                strength: "some",
-              };
+              enemies.forEach((enemy) => {
+                enemy.status = {
+                  type: "sleepy",
+                  strength: "some",
+                };
+              });
             } else {
               text = "Ingen effekt";
-              enemy.status = {
-                type: "sleepy",
-                strength: "none",
-              };
+              enemies.forEach((enemy) => {
+                enemy.status = {
+                  type: "sleepy",
+                  strength: "none",
+                };
+              });
             }
           } else {
             throw Error("Unknown song");
@@ -769,90 +777,103 @@ export function battle():
         }
       }
 
-      if (enemy.health <= 0) {
+      const dead = enemies.filter((e) => e.health <= 0);
+
+      dead.forEach((enemy) => {
         enemy.s.y += 10;
         enemy.s.flipY = true;
+      });
+
+      if (dead.length === enemies.length) {
         turn = {
           type: "win",
           text: "Fågeln dog",
         };
       } else {
-        const scared =
-          enemy.status?.type === "fearful" && enemy.status?.strength !== "none";
+        for (let enemy of enemies) {
+          const scared =
+            enemy.status?.type === "fearful" &&
+            enemy.status?.strength !== "none";
 
-        enemy.boundary = animBoundary(
-          enemy.boundary,
-          scared ? scaredBoundary() : normalBoundary()
-        );
+          enemy.boundary = animBoundary(
+            enemy.boundary,
+            scared ? scaredBoundary() : normalBoundary()
+          );
 
-        const animationTarget = scared ? animation_shake : animation_long_floaty;
+          const animationTarget = scared
+            ? animation_shake
+            : animation_long_floaty;
 
-        if (animationTarget !== enemy.animation.to && animationTarget !== enemy.animation.from) {
-          enemy.animation.to = animationTarget;
-          enemy.animation.t = 0;
-        }
+          if (
+            animationTarget !== enemy.animation.to &&
+            animationTarget !== enemy.animation.from
+          ) {
+            enemy.animation.to = animationTarget;
+            enemy.animation.t = 0;
+          }
 
-        if (enemy.animation.to === enemy.animation.from) {
-          enemy.animation.to = undefined;
-        }
-
-        if (enemy.animation.to) {
-          enemy.animation.t = anim(enemy.animation.t, 1);
-
-          if (enemy.animation.t > 0.95) {
-            enemy.animation.from = enemy.animation.to;
+          if (enemy.animation.to === enemy.animation.from) {
             enemy.animation.to = undefined;
           }
+
+          if (enemy.animation.to) {
+            enemy.animation.t = anim(enemy.animation.t, 1);
+
+            if (enemy.animation.t > 0.95) {
+              enemy.animation.from = enemy.animation.to;
+              enemy.animation.to = undefined;
+            }
+          }
+
+          enemy.x = anim(enemy.x, centerX(enemy.boundary));
+          enemy.y = anim(enemy.y, centerY(enemy.boundary));
+
+          if (
+            enemy.status?.type === "sleepy" &&
+            enemy.status.strength === "some"
+          ) {
+            enemy.speed = anim(enemy.speed, 0.25);
+          }
+          if (
+            enemy.status?.type === "sleepy" &&
+            enemy.status.strength === "much"
+          ) {
+            enemy.speed = anim(enemy.speed, 0);
+          } else {
+            enemy.speed = anim(enemy.speed, 1);
+          }
+
+          const [offX, offY] = blendAnimation(enemy.animation, animationTimer);
+
+          const dx =
+            offX *
+            (1 / 50) *
+            (enemy.boundary.right - enemy.boundary.left) *
+            (1 / 2) *
+            enemy.speed;
+
+          const dy =
+            offY *
+            (1 / 50) *
+            (enemy.boundary.bottom - enemy.boundary.top) *
+            (1 / 2) *
+            enemy.speed;
+
+          enemy.s.x = enemy.x + dx;
+          enemy.s.y = enemy.y + dy;
+
+          const ex = enemy.s.x - 50;
+          const ey = enemy.s.y - 50;
+
+          enemy.healthBar.back.setPosition(ex, ey);
+          enemy.healthBar.front.setPosition(ex, ey);
+          enemy.healthBar.front.width =
+            enemy.healthBar.back.width * (enemy.health / enemy.maxHealth);
+
+          enemy.healthBar.back.setVisible(turn.type !== "win");
+          enemy.healthBar.front.setVisible(turn.type !== "win");
         }
-
-        enemy.x = anim(enemy.x, centerX(enemy.boundary));
-        enemy.y = anim(enemy.y, centerY(enemy.boundary));
-
-        if (
-          enemy.status?.type === "sleepy" &&
-          enemy.status.strength === "some"
-        ) {
-          enemy.speed = anim(enemy.speed, 0.25);
-        }
-        if (
-          enemy.status?.type === "sleepy" &&
-          enemy.status.strength === "much"
-        ) {
-          enemy.speed = anim(enemy.speed, 0);
-        } else {
-          enemy.speed = anim(enemy.speed, 1);
-        }
-
-        const [offX, offY] = blendAnimation(enemy.animation, animationTimer)
-
-        const dx =
-          offX *
-          (1 / 50) *
-          (enemy.boundary.right - enemy.boundary.left) *
-          (1 / 2) *
-          enemy.speed;
-
-        const dy =
-          offY *
-          (1 / 50) *
-          (enemy.boundary.bottom - enemy.boundary.top) *
-          (1 / 2) *
-          enemy.speed;
-
-        enemy.s.x = enemy.x + dx;
-        enemy.s.y = enemy.y + dy;
       }
-
-      const ex = enemy.s.x - 50;
-      const ey = enemy.s.y - 50;
-
-      enemy.healthBar.back.setPosition(ex, ey);
-      enemy.healthBar.front.setPosition(ex, ey);
-      enemy.healthBar.front.width =
-        enemy.healthBar.back.width * (enemy.health / enemy.maxHealth);
-
-      enemy.healthBar.back.setVisible(turn.type !== "win");
-      enemy.healthBar.front.setVisible(turn.type !== "win");
 
       if (restart) {
         this.children.removeAll();

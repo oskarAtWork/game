@@ -6,7 +6,8 @@ import scene1 from './dialogue_script/scene1';
 import scene2 from './dialogue_script/scene2';
 import scene3 from './dialogue_script/scene3';
 import scene4 from './dialogue_script/scene4';
-import { Names } from "./dialog-person";
+
+import { EnemyData, ezEnemy } from "./enemy";
 
 type SceneKey = typeof dialogSceneKey | typeof battleSceneKey;
 export type Scene = typeof scene1 | typeof scene2;
@@ -16,7 +17,7 @@ let x = window.location.pathname;
 export let currentLevel = x.startsWith('/') && Number.parseInt(x[1]) ? Number.parseInt(x[1]) : 0;
 
 export type BattleData = {
-  name: Exclude<Names, 'adam' | 'klara' | 'molly' | 'oskar'>,
+  enemies: EnemyData[], 
   strings: ('G' | 'D')[],
 }
 
@@ -44,7 +45,7 @@ export const levels: Level[] = [
   {
     sceneKey: 'BattleScene',
     battleData: {
-      name: 'silkeshäger',
+      enemies: [ezEnemy('silkeshäger', 14)],
       strings: ['G'],
     }
   },
@@ -61,7 +62,7 @@ export const levels: Level[] = [
   {
     sceneKey: 'BattleScene',
     battleData: {
-      name: 'biatare',
+      enemies: [ezEnemy('biatare', 14)],
       strings: ['G', 'D'],
     }
   },
