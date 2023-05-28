@@ -86,7 +86,7 @@ export function dialog():
     if (otherAction?.type === "sheet") {
       let song: Song;
 
-      const sheet = createSheet(context);
+      const sheet = createSheet(context, 20);
 
       if (otherAction.song === "sovningen") {
         song = sovningen(context, sheet);
@@ -193,8 +193,7 @@ export function dialog():
 
         const resp = scene[currentLineIndex].response;
 
-        if (ev.key === " " && !resp) {
-
+        if (ev.key.toUpperCase() === (scene[currentLineIndex].keyToContinue?.toUpperCase() ?? " ") && !resp) {
           if (learnState?.state !== 'failed') {
             const isAnswer = scene[currentLineIndex - 1]?.response?.correctIndex;
 

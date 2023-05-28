@@ -1,7 +1,10 @@
 import { Names } from "../dialog-person";
 import { SongNames } from "../songs/song-utils";
 
-const speaker = (speaker: Line['speaker']) => (line: string, otherAction?: Action, response?: Line['response']) => ({speaker, line, response, otherAction})
+const speaker = (speaker: Line['speaker']) => (line: string, options?: {
+  otherAction?: Action, response?: Line['response'], keyToContinue?: string;
+}) => ({speaker, line, response: options?.response, otherAction: options?.otherAction, keyToContinue: options?.keyToContinue});
+
 export const oskar = speaker('oskar');
 export const adam = speaker('adam');
 export const klara = speaker('klara');
@@ -47,6 +50,7 @@ export function playLine(line: string, successMessage: string, failMessage: stri
 export type Line<T=Action> = {
   speaker: Names | '',
   line: string;
+  keyToContinue?: string;
   response?: {
     options: string[],
     correctIndex?: number; 

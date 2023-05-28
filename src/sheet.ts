@@ -10,9 +10,9 @@ export type Sheet = {
   innerX: () => number;
 }
 
-export function createSheet(scene: Phaser.Scene): Sheet {
+export function createSheet(scene: Phaser.Scene, y: number): Sheet {
   const obj = {
-    s: scene.add.image(200, 20, 'sheet').setOrigin(0, 0),
+    s: scene.add.image(200, y, 'sheet').setOrigin(0, 0),
     paddingTop: 6,
     paddingRight: 10,
     paddingBottom: 10,

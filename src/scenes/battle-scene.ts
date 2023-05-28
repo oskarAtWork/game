@@ -15,7 +15,7 @@ import {
   ENEMY_FRAME_NORMAL,
   ENEMY_FRAME_SLEEPY,
   Enemy,
-  braveBoundary,
+  blendAnimation,
   normalBoundary,
   scaredBoundary,
 } from "../enemy";
@@ -29,9 +29,9 @@ import {
 } from "../songs/song-utils";
 import { createSheet, Sheet } from "../sheet";
 import { preload } from "../preload/preload";
-import { getCurrentLevel, goToNextScene } from "../progression";
+import { BattleData, getCurrentLevel, goToNextScene } from "../progression";
 import { preloadPeople } from "../dialog-person";
-import { animation_long_floaty } from "../animations";
+import { animation_long_floaty, animation_shake } from "../animations";
 import { preloadSongs } from "../preload/preload-song";
 import { Player } from "../player";
 import { animBoundary, centerX, centerY } from "../boundary";
@@ -81,10 +81,10 @@ type Turn =
       text: string;
     };
 
-const TURN_SELECT = {
+const TURN_SELECT = (bd: BattleData) => ({
   type: "select",
-  text: "Välj en fiolsträng",
-} satisfies Turn;
+  text: "Välj en fiolsträng: " + bd.strings.join(', ')
+} satisfies Turn);
 
 export const battleSceneKey = "BattleScene" as const;
 
@@ -103,7 +103,6 @@ export function battle():
     s: Phaser.GameObjects.Image;
   };
   let player: Player;
-  let boundary: Phaser.GameObjects.Rectangle;
 
   let song: undefined | Song;
   let textObj: Phaser.GameObjects.Text;
@@ -246,7 +245,6 @@ export function battle():
     attacks = [];
     opponentAttacks = [];
     effects = [];
-    turn = TURN_SELECT;
     const level = getCurrentLevel();
 
     keys = {
@@ -262,6 +260,8 @@ export function battle():
       );
       throw Error("Oh no, wrong level");
     }
+
+    turn = TURN_SELECT(level.battleData);
 
     context.add.image(0, 0, "background").setOrigin(0, 0);
 
@@ -291,10 +291,15 @@ export function battle():
           .setFillStyle(0x22ee22),
       },
       boundary: normalBoundary(),
+      animation: {
+        from: animation_long_floaty,
+        to: undefined,
+        t: 0,
+      },
       x: enemyImage.x,
       y: enemyImage.y,
-      health: 10,
-      maxHealth: 10,
+      health: 8,
+      maxHealth: 8,
       status: undefined,
       hasEarMuffs: false,
       speed: 1,
@@ -358,7 +363,7 @@ export function battle():
 
       if (turn.type === "opponent") {
         if (ev.key === " ") {
-          turn = TURN_SELECT;
+          turn = TURN_SELECT(level.battleData);
         }
         return;
       }
@@ -379,7 +384,7 @@ export function battle():
           lastT = Date.now();
           turn = {
             type: "play",
-            text: "Play using\n§1234567890",
+            text: "",
           };
           return;
         }
@@ -426,11 +431,7 @@ export function battle():
       hp.push(context.add.image(20 + i * 30, 460, "heart"));
     }
 
-    boundary = context.add
-      .rectangle(0, 0, 100, 100)
-      .setOrigin(0, 0)
-      .setStrokeStyle(2, 0x000000);
-    sheet = createSheet(context);
+    sheet = createSheet(context, 480);
 
     textObj = context.add
       .text(400, 500, "", {
@@ -441,7 +442,7 @@ export function battle():
       .setOrigin(0.5, 0);
 
     line = {
-      s: context.add.image(300, 20, "line"),
+      s: context.add.image(300, sheet.s.y, "line"),
     };
     line.s.setOrigin(0, 0);
     line.s.setVisible(false);
@@ -502,7 +503,7 @@ export function battle():
         }
 
         if (collides) {
-          hurtPlayer(1);
+          hurtPlayer(3);
         }
       }
 
@@ -574,25 +575,24 @@ export function battle():
         const dist = howClose(getT());
         const angle = 0;
 
-        const angleLower = angle + dist * Phaser.Math.DegToRad(45);
-        const angleUpper = angle - dist * Phaser.Math.DegToRad(45);
+        knifeState.spread = dist * Phaser.Math.DegToRad(240);
 
-        knifeState.angleLower = angleLower;
-        knifeState.angleUpper = angleUpper;
-        knifeState.spread = dist * Phaser.Math.DegToRad(45);
+        knifeState.angleLower = angle + knifeState.spread / 2;
+        knifeState.angleUpper = angle - knifeState.spread / 2;
+
         knifeState.angle = angle;
 
         knifeState.aimLineUpper.setTo(
           player.s.x,
           player.s.y,
-          player.s.x + Math.cos(angleUpper) * 1000,
-          player.s.y + Math.sin(angleUpper) * 1000
+          player.s.x + Math.cos(knifeState.angleUpper) * 1000,
+          player.s.y + Math.sin(knifeState.angleUpper) * 1000
         );
         knifeState.aimLineLower.setTo(
           player.s.x,
           player.s.y,
-          player.s.x + Math.cos(angleLower) * 1000,
-          player.s.y + Math.sin(angleLower) * 1000
+          player.s.x + Math.cos(knifeState.angleLower) * 1000,
+          player.s.y + Math.sin(knifeState.angleLower) * 1000
         );
 
         let remove = false;
@@ -689,6 +689,7 @@ export function battle():
 
             if (strength) {
               createLightning(player.s.x, player.s.y);
+              hurtPlayer(3);
             }
           }
         }
@@ -700,7 +701,7 @@ export function battle():
         gameOver.alpha = anim(gameOver.alpha, 0);
       }
 
-      sheet.s.setVisible(turn.type === "play");
+      sheet.s.setVisible(turn.type === "play" && !!song);
 
       if (song && turn.type === "play") {
         const timeSinceStart = getT();
@@ -781,14 +782,28 @@ export function battle():
 
         enemy.boundary = animBoundary(
           enemy.boundary,
-          scared ? scaredBoundary() : braveBoundary()
+          scared ? scaredBoundary() : normalBoundary()
         );
-        boundary.x = enemy.boundary.left;
-        boundary.y = enemy.boundary.top;
 
+        const animationTarget = scared ? animation_shake : animation_long_floaty;
 
-        boundary.displayWidth = enemy.boundary.right - enemy.boundary.left;
-        boundary.displayHeight = enemy.boundary.bottom - enemy.boundary.top;
+        if (animationTarget !== enemy.animation.to && animationTarget !== enemy.animation.from) {
+          enemy.animation.to = animationTarget;
+          enemy.animation.t = 0;
+        }
+
+        if (enemy.animation.to === enemy.animation.from) {
+          enemy.animation.to = undefined;
+        }
+
+        if (enemy.animation.to) {
+          enemy.animation.t = anim(enemy.animation.t, 1);
+
+          if (enemy.animation.t > 0.95) {
+            enemy.animation.from = enemy.animation.to;
+            enemy.animation.to = undefined;
+          }
+        }
 
         enemy.x = anim(enemy.x, centerX(enemy.boundary));
         enemy.y = anim(enemy.y, centerY(enemy.boundary));
@@ -808,19 +823,17 @@ export function battle():
           enemy.speed = anim(enemy.speed, 1);
         }
 
+        const [offX, offY] = blendAnimation(enemy.animation, animationTimer)
+
         const dx =
-          animation_long_floaty[
-            animationTimer % animation_long_floaty.length
-          ][0] *
+          offX *
           (1 / 50) *
           (enemy.boundary.right - enemy.boundary.left) *
           (1 / 2) *
           enemy.speed;
 
         const dy =
-          animation_long_floaty[
-            animationTimer % animation_long_floaty.length
-          ][1] *
+          offY *
           (1 / 50) *
           (enemy.boundary.bottom - enemy.boundary.top) *
           (1 / 2) *

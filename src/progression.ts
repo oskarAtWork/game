@@ -15,15 +15,18 @@ let x = window.location.pathname;
 
 export let currentLevel = x.startsWith('/') && Number.parseInt(x[1]) ? Number.parseInt(x[1]) : 0;
 
+export type BattleData = {
+  name: Exclude<Names, 'adam' | 'klara' | 'molly' | 'oskar'>,
+  strings: ('G' | 'D')[],
+}
+
 export type Level = {
   sceneKey: typeof dialogSceneKey;
   dialog: Scene;
   background: string;
 } | {
   sceneKey: typeof battleSceneKey;
-  battleData: {
-    name: Exclude<Names, 'adam' | 'klara' | 'molly' | 'oskar'>,
-  }
+  battleData: BattleData;
 }
 
 export const levels: Level[] = [
@@ -42,6 +45,7 @@ export const levels: Level[] = [
     sceneKey: 'BattleScene',
     battleData: {
       name: 'silkeshäger',
+      strings: ['G'],
     }
   },
   {
@@ -58,6 +62,7 @@ export const levels: Level[] = [
     sceneKey: 'BattleScene',
     battleData: {
       name: 'biatare',
+      strings: ['G', 'D'],
     }
   },
 ]

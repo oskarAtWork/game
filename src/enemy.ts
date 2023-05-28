@@ -1,5 +1,6 @@
 import { Boundary } from "./boundary";
 import { BirdNames } from "./dialog-person";
+import {Animation} from './animations';
 
 export type EffectStrength = 'much' | 'some' | 'none';
 
@@ -34,16 +35,17 @@ export type Enemy = {
     strength: EffectStrength;
     type: 'sleepy' | 'fearful';
   } | undefined;
-
   name: BirdNames;
-
   healthBar: {
     back: Phaser.GameObjects.Rectangle;
     front: Phaser.GameObjects.Rectangle;
   }
-
   boundary: Boundary;
-
+  animation: {
+    from: Animation,
+    to: Animation | undefined;
+    t: number,
+  },
   hasEarMuffs: boolean;
   health: number;
   maxHealth: number;
@@ -52,4 +54,20 @@ export type Enemy = {
   speed: number;
   x: number;
   y: number;
+}
+
+
+export function blendAnimation(animations: Enemy['animation'], animationTimer: number) {
+  const from = animations.from[animationTimer % animations.from.length];
+
+  if (!animations.to) {
+    return from;
+  }
+
+  const to = animations.to[animationTimer % animations.to.length];
+
+  return [
+    from[0] * (1-animations.t) + to[0] * animations.t,
+    from[1] * (1-animations.t) + to[1] * animations.t,
+  ]
 }
