@@ -29,7 +29,7 @@ if __name__ == "__main__":
         print("Please provide the image path as an argument.")
         sys.exit(1)
   
-    resize_image(sys.argv[1], 100)
+    resize_image(sys.argv[1], 200)
 
 
 

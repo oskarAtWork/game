@@ -12,7 +12,7 @@ const scene: Line[] = [
 
     oskar('Håll in G för att spela Sömnlåten.\nSer du rytm-mätaren med den lilla bollen?\nTryck på rätt siffra när bollen passerar siffran.'),
     
-    playLine('...', 'Woah, snyggt\n[space] för att fortsätta\n[backspace] för att försöka igen', 'vi testar en gång till\n[backspace] för att försöka igen'),
+    playLine('...', 'Woah, snyggt', 'vi testar en gång till'),
     
     adam('Vilken bra låt. Vem har du den efter?'),
     oskar('Den är efter den legendariska spelmannen\n"Spelmannen som inte får nämnas vid namn."'),

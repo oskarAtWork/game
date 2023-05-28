@@ -4,8 +4,11 @@ import { SongNames } from "../songs/song-utils";
 const speaker = (speaker: Line['speaker']) => (line: string, otherAction?: Action, response?: Line['response']) => ({speaker, line, response, otherAction})
 export const oskar = speaker('oskar');
 export const adam = speaker('adam');
+export const klara = speaker('klara');
 export const molly = speaker('molly');
-export const silkeshager = speaker('silkeshäger'); 
+export const silkeshager = speaker('silkeshäger');
+export const biatare = speaker('biatare'); 
+export const tajgablastjart = speaker('tajgablåstjärt'); 
 export const blank = speaker(''); 
 
 export type EnterAction = {

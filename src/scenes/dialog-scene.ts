@@ -302,9 +302,9 @@ export function dialog():
         } else if (currentLine.otherAction?.type === 'play' && learnState) {
 
           if (learnState.state === 'failed') {
-            currentDialog.text = currentLine.otherAction.failMessage;
+            currentDialog.text = currentLine.otherAction.failMessage + '\n[backspace] För att testa igen'
           } else if (learnState.state === 'passed') {
-            currentDialog.text = currentLine.otherAction.successMessage;
+            currentDialog.text = currentLine.otherAction.successMessage + '\n[space] För att fortsätta\n[backspace] För att testa igen'
           } else if (learnState.state === 'playing') {
             currentDialog.text = 'Play with §1234567890';
           }

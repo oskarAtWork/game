@@ -4,6 +4,9 @@ import 'phaser';
 
 import scene1 from './dialogue_script/scene1';
 import scene2 from './dialogue_script/scene2';
+import scene3 from './dialogue_script/scene3';
+import scene4 from './dialogue_script/scene4';
+import { Names } from "./dialog-person";
 
 type SceneKey = typeof dialogSceneKey | typeof battleSceneKey;
 export type Scene = typeof scene1 | typeof scene2;
@@ -19,7 +22,7 @@ export type Level = {
 } | {
   sceneKey: typeof battleSceneKey;
   battleData: {
-    enemies: number,
+    name: Exclude<Names, 'adam' | 'klara' | 'molly' | 'oskar'>,
   }
 }
 
@@ -38,7 +41,23 @@ export const levels: Level[] = [
   {
     sceneKey: 'BattleScene',
     battleData: {
-      enemies: 1,
+      name: 'silkeshäger',
+    }
+  },
+  {
+    sceneKey: 'DialogScene',
+    dialog: scene3,
+    background: '/assets/forest_background.png',
+  },
+  {
+    sceneKey: 'DialogScene',
+    dialog: scene4,
+    background: '/assets/forest_background.png',
+  },
+  {
+    sceneKey: 'BattleScene',
+    battleData: {
+      name: 'biatare',
     }
   },
 ]

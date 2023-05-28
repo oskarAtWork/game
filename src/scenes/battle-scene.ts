@@ -194,7 +194,7 @@ export function battle():
 
       player = createPerson(this, "adam");
 
-      const enemyImage = this.physics.add.sprite(600, 320, "silkeshäger");
+      const enemyImage = this.physics.add.sprite(600, 320, level.battleData.name);
 
       enemy = {
         s: enemyImage,
@@ -433,18 +433,13 @@ export function battle():
         }
       }
 
-      if (enemy.health <= 0 && turn.type !== "win") {
-        turn = {
-          type: "win",
-          text: "You won",
-        };
-      }
-
       if (turn.type === "shoot") {
         textObj.text = turn.text + "\nShots left: " + turn.shots;
       } else if (turn.type === "opponent" && turn.playedEffect) {
         textObj.text = turn.effectText;
-      }  else {
+      }  else if (turn.type === 'win') {
+        textObj.text = 'Du vann\n' + turn.text + '\n[space] för att fortsätta'
+      } else {
         textObj.text = turn.text;
       }
 
@@ -487,10 +482,10 @@ export function battle():
 
           if (song.name === "skaningen") {
             if (score > 0.7) {
-              text = "Väldigt rörande";
+              text = "Väldigt skrämmande";
               enemy.fearful = "much";
             } else if (score > 0.3) {
-              text = "Lite effekt ändå";
+              text = "Lite skrämmande ändå";
               enemy.fearful = "some";
             } else {
               text = "Ingen effekt";
@@ -526,9 +521,17 @@ export function battle():
       if (enemy.health <= 0) {
         enemy.s.y += 10;
         enemy.s.flipY = true;
+        turn = {
+          type: 'win',
+          text: 'Fågeln dog',
+        }
       } else if (enemy.fearful === "much") {
         enemy.s.x += 10;
         enemy.s.flipX = true;
+        turn = {
+          type: 'win',
+          text: 'Fågeln flydde',
+        }
       } else {
         if (enemy.sleepy === "much") {
           enemy.s.x = enemy.sx;
