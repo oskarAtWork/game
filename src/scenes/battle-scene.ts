@@ -3,13 +3,13 @@ import backgroundUrl from "../../assets/tile-layout.png";
 import gameOverUrl from "../../assets/game_over.png";
 import heartUrl from "../../assets/heart.png";
 import knifeUrl from "../../assets/knife.png";
+import biUrl from "../../assets/bi.png";
 import explosionUrl from "../../assets/explosion.png";
 import lightningUrl from "../../assets/lightning.png";
 
 const anim = (from: number, to: number) => {
   return from * 0.95 + to * 0.05;
-}
-
+};
 
 import { ENEMY_FRAME_NORMAL, ENEMY_FRAME_SLEEPY, Enemy } from "../enemy";
 import { skaningen, sovningen } from "../songs/songs";
@@ -23,9 +23,7 @@ import {
 import { createSheet, Sheet } from "../sheet";
 import { preload } from "../preload/preload";
 import { getCurrentLevel, goToNextScene } from "../progression";
-import {
-  preloadPeople,
-} from "../dialog-person";
+import { preloadPeople } from "../dialog-person";
 import { animation_long_floaty } from "../animations";
 import { preloadSongs } from "../preload/preload-song";
 import { Player } from "../player";
@@ -103,6 +101,12 @@ export function battle():
   let textObj: Phaser.GameObjects.Text;
   let playedNotes: { s: Phaser.GameObjects.Image; hit: boolean }[];
 
+  let playEffect: {
+    container: Phaser.GameObjects.Container;
+    skaningen: Phaser.GameObjects.Image;
+    sovningen: Phaser.GameObjects.Image;
+  };
+
   let turn: Turn;
   let hp: Phaser.GameObjects.Image[];
 
@@ -119,6 +123,14 @@ export function battle():
     speed: number;
   }[];
 
+  let opponentAttacks: (
+    | {
+        s: Phaser.GameObjects.Image;
+        speed: number;
+      }
+    | undefined
+  )[];
+
   let knifeState: {
     angle: number;
     angleUpper: number;
@@ -128,8 +140,8 @@ export function battle():
     spread: number;
   };
 
-  let explosions: {
-    type: 'explosion' | 'lightning',
+  let effects: {
+    type: "explosion" | "lightning";
     start: number;
     length: number;
     frames: number;
@@ -141,54 +153,94 @@ export function battle():
   let context: Phaser.Scene;
 
   function createExplosion(x: number, y: number) {
-    explosions.push({
-      type: 'explosion',
+    effects.push({
+      type: "explosion",
       start: animationTimer,
-      length: 100,
+      length: 30,
       frames: 10,
-      s: context.add.sprite(x, y, "explosion"),
+      s: context.add.sprite(x, y, "explosion").setScale(0.5),
     });
   }
 
+  function createBi(x: number, y: number, angle: number) {
+    const obj = {
+      s: context.physics.add.image(x, y, "bi").setAngle(angle),
+      speed: 4,
+    };
+
+    let found = false;
+
+    for (let i = 0; i < opponentAttacks.length; i++) {
+      if (!opponentAttacks[i]) {
+        opponentAttacks[i] = obj;
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      opponentAttacks.push(obj);
+    }
+  }
+
+  function hurtPlayer(amount: number) {
+    createExplosion(player.s.x, player.s.y - 10);
+    for (let i = 0; i < amount; i++) {
+      const heart = hp.pop();
+
+      if (heart) {
+        createExplosion(heart.x, heart.y);
+        heart.destroy();
+      }
+    }
+
+    if (!hp.length) {
+      turn = {
+        type: "loose",
+        text: "Ajdå\n[space] för att testa igen",
+      };
+    }
+  }
+
   function createLightning(x: number, y: number) {
-    explosions.push({
-      type: 'lightning',
+    effects.push({
+      type: "lightning",
       start: animationTimer,
       length: 50,
       frames: 9,
       s: context.add.sprite(x, y, "lightning"),
     });
 
-    explosions.push({
-      type: 'lightning',
+    effects.push({
+      type: "lightning",
       start: animationTimer,
       length: 50,
       frames: 9,
-      s: context.add.sprite(x, y-100, "lightning"),
+      s: context.add.sprite(x, y - 100, "lightning"),
     });
 
-    explosions.push({
-      type: 'lightning',
+    effects.push({
+      type: "lightning",
       start: animationTimer,
       length: 50,
       frames: 9,
-      s: context.add.sprite(x, y-200, "lightning"),
+      s: context.add.sprite(x, y - 200, "lightning"),
     });
 
-    explosions.push({
-      type: 'lightning',
+    effects.push({
+      type: "lightning",
       start: animationTimer,
       length: 50,
       frames: 9,
       s: context.add.sprite(x, y - 300, "lightning"),
     });
 
-    explosions.push({
-      type: 'lightning',
+    effects.push({
+      type: "lightning",
       start: animationTimer,
       length: 50,
       frames: 9,
-      s: context.add.sprite(x, y-400, "lightning"),
+      s: context.add.sprite(x, y - 400, "lightning"),
     });
   }
 
@@ -197,7 +249,7 @@ export function battle():
     right: Phaser.Input.Keyboard.Key;
     up: Phaser.Input.Keyboard.Key;
     down: Phaser.Input.Keyboard.Key;
-  }
+  };
 
   function create(c: Phaser.Scene) {
     context = c;
@@ -208,16 +260,17 @@ export function battle():
     playedNotes = [];
     hp = [];
     attacks = [];
-    explosions = [];
+    opponentAttacks = [];
+    effects = [];
     turn = TURN_SELECT;
     const level = getCurrentLevel();
 
     keys = {
-      left: context.input.keyboard!!.addKey('left'),
-      right: context.input.keyboard!!.addKey('right'),
-      down: context.input.keyboard!!.addKey('down'),
-      up: context.input.keyboard!!.addKey('up'),
-    }
+      left: context.input.keyboard!!.addKey("left"),
+      right: context.input.keyboard!!.addKey("right"),
+      down: context.input.keyboard!!.addKey("down"),
+      up: context.input.keyboard!!.addKey("up"),
+    };
 
     if (level.sceneKey !== "BattleScene") {
       window.alert(
@@ -226,23 +279,15 @@ export function battle():
       throw Error("Oh no, wrong level");
     }
 
-    context.add
-      .image(0, 0, "background")
-      .setOrigin(0, 0)
-
-    sheet = createSheet(context);
-
-    line = {
-      s: context.add.image(300, 20, "line"),
-    };
-    line.s.setOrigin(0, 0);
-    line.s.setVisible(false);
+    context.add.image(0, 0, "background").setOrigin(0, 0);
 
     player = {
-      s: context.add.image(230, 220, 'adam').setScale(0.25),
-    }
+      s: context.physics.add.image(230, 220, "adam").setScale(0.25),
+    };
 
-    const enemyImage = context.physics.add.sprite(560, 220, level.battleData.name, 0).setScale(0.75);
+    const enemyImage = context.physics.add
+      .sprite(560, 220, level.battleData.name, 0)
+      .setScale(0.75);
 
     enemy = {
       s: enemyImage,
@@ -251,8 +296,14 @@ export function battle():
         fontFamily: "Helvetica",
       }),
       healthBar: {
-        back: context.add.rectangle(0, 0, 100, 10).setOrigin(0, 0).setFillStyle(0x000000),
-        front: context.add.rectangle(0, 0, 100, 10).setOrigin(0, 0).setFillStyle(0x22ee22),
+        back: context.add
+          .rectangle(0, 0, 100, 10)
+          .setOrigin(0, 0)
+          .setFillStyle(0x000000),
+        front: context.add
+          .rectangle(0, 0, 100, 10)
+          .setOrigin(0, 0)
+          .setFillStyle(0x22ee22),
       },
       sx: enemyImage.x,
       sy: enemyImage.y,
@@ -263,24 +314,27 @@ export function battle():
       speed: 1,
     };
 
-    context.add.image(0, 0, "dialog").setOrigin(0, 0);
-
-    for (let i = 0; i < 10; i++) {
-      hp.push(context.add.image(20 + i * 30, 460, "heart"));
-    }
 
     context.input.keyboard?.on("keydown", (ev: KeyboardEvent) => {
       const key = ev.key.toUpperCase();
       ev.preventDefault();
 
-      if (turn.type === 'loose') {
-        if (ev.key === ' ') {
+      if (ev.key === ' ') {
+        let r = 10;
+        for (let i = 180 - r * 4; i <= 180 + r * 4; i += r) {
+          createBi(enemy.s.x, enemy.s.y, i);
+        }
+    
+      }
+
+      if (turn.type === "loose") {
+        if (ev.key === " ") {
           restart = true;
         }
         return;
       }
 
-      if (turn.type === "shoot" && turn.shots > 0 && ev.key === ' ') {
+      if (turn.type === "shoot" && turn.shots > 0 && ev.key === " ") {
         turn = { ...turn, shots: turn.shots - 1 };
 
         const knife = context.physics.add.sprite(
@@ -297,13 +351,13 @@ export function battle():
         attacks.push({ s: knife, destroy: false, speed: 12 });
       }
 
-      if (key === 'Q') {
+      if (key === "Q") {
         restart = true;
         return;
       }
 
-      if (turn.type === 'play') {
-        if (ev.key === ' ') {
+      if (turn.type === "play") {
+        if (ev.key === " ") {
           if (!song || getT() > song.endsAt) {
             context.sound.play("knifeSong");
             lastT = Date.now();
@@ -311,64 +365,57 @@ export function battle():
             turn = {
               type: "shoot",
               shots: 7,
-              text: 'Klicka för att skjuta (i takt)'
+              text: "[space] för att skjuta (i takt)",
             };
           }
           return;
         }
       }
 
-      if (turn.type === 'opponent') {
+      if (turn.type === "opponent") {
         if (!turn.playedEffect) {
+          let r = 8;
+          for (let i = 180 - r * 4; i <= 180 + r * 4; i += r) {
+            createBi(enemy.s.x, enemy.s.y, i);
+          }
           turn.playedEffect = true;
+
+          /*
 
           let strength: number;
 
-          if (enemy.status?.type === 'sleepy') {
-            if (enemy.status.strength === 'much') {
-              turn.text = 'Fågeln sov, ingen attack';
+          if (enemy.status?.type === "sleepy") {
+            if (enemy.status.strength === "much") {
+              turn.text = "Fågeln sov, ingen attack";
               strength = 0;
-            } else if (enemy.status.strength === 'some') {
-              turn.text = 'Fågeln gjorde en svag attack (1hp)';
+            } else if (enemy.status.strength === "some") {
+              turn.text = "Fågeln gjorde en svag attack (1hp)";
               strength = 1;
             } else {
-              turn.text = 'Arg fågel, 3 hp skada';
+              turn.text = "Arg fågel, 3 hp skada";
               strength = 3;
             }
-          } else if (enemy.status?.type === 'fearful') {
-            if (enemy.status.strength === 'much' && Math.random() < 0.5) {
-              turn.text = 'Rädd fågel, skakade så mycket att hen missade';
+          } else if (enemy.status?.type === "fearful") {
+            if (enemy.status.strength === "much" && Math.random() < 0.5) {
+              turn.text = "Rädd fågel, skakade så mycket att hen missade";
               strength = 0;
-            } if (enemy.status.strength === 'some' && Math.random() < 0.25) {
-              turn.text = 'Rätt rädd fågel, skakade så mycket att hen missade';
+            }
+            if (enemy.status.strength === "some" && Math.random() < 0.25) {
+              turn.text = "Rätt rädd fågel, skakade så mycket att hen missade";
               strength = 0;
             } else {
-              turn.text = 'Rädd fågel, 3 hp skada';
+              turn.text = "Rädd fågel, 3 hp skada";
               strength = 3;
             }
           } else {
-            turn.text = 'Arg fågel, 3 hp skada';
+            turn.text = "Arg fågel, 3 hp skada";
             strength = 3;
           }
 
           if (strength) {
             createLightning(player.s.x, player.s.y);
-            for (let i = 0; i < strength; i++) {
-              const heart = hp.pop();
-  
-              if (heart) {
-                createExplosion(heart.x, heart.y)
-                heart.destroy();
-              }
-            }
 
-            if (!hp.length) {
-              turn = {
-                type: 'loose',
-                text: 'Ajdå\n[space] för att testa igen',
-              }
-            }
-          }
+          }*/
         } else {
           turn = TURN_SELECT;
         }
@@ -433,6 +480,21 @@ export function battle():
         .setOrigin(0, 0),
     };
 
+    playEffect = {
+      container: context.add.container(0, 0).setAlpha(0),
+      skaningen: context.add.image(400, 400, "adam-play-1"),
+      sovningen: context.add.image(400, 400, "adam-play-3"),
+    };
+    playEffect.container.add(playEffect.skaningen);
+    playEffect.container.add(playEffect.sovningen);
+
+    context.add.image(0, 0, "dialog").setOrigin(0, 0);
+    for (let i = 0; i < 10; i++) {
+      hp.push(context.add.image(20 + i * 30, 460, "heart"));
+    }
+
+    sheet = createSheet(context);
+
     textObj = context.add
       .text(400, 500, "", {
         align: "center",
@@ -441,7 +503,13 @@ export function battle():
       })
       .setOrigin(0.5, 0);
 
-    gameOver = context.add.image(0, 0, 'game_over').setOrigin(0, 0).setAlpha(0);
+    line = {
+      s: context.add.image(300, 20, "line"),
+    };
+    line.s.setOrigin(0, 0);
+    line.s.setVisible(false);
+
+    gameOver = context.add.image(0, 0, "game_over").setOrigin(0, 0).setAlpha(0);
   }
 
   return {
@@ -453,6 +521,7 @@ export function battle():
       this.load.image("background", backgroundUrl);
       this.load.image("heart", heartUrl);
       this.load.image("knife", knifeUrl);
+      this.load.image("bi", biUrl);
 
       this.load.spritesheet("explosion", explosionUrl, {
         frameWidth: 100,
@@ -464,15 +533,61 @@ export function battle():
         frameHeight: 100,
       });
 
-      this.load.image("game_over", gameOverUrl)
+      this.load.image("game_over", gameOverUrl);
     },
     create() {
-      create(this)
+      create(this);
     },
     update() {
       animationTimer++;
 
-      if (!explosions.some((x) => x.type === 'lightning')) {
+      for (let i = opponentAttacks.length - 1; i >= 0; i--) {
+        const attack = opponentAttacks[i];
+        if (!attack) {
+          continue;
+        }
+
+        attack.s.x +=
+          Math.cos(Phaser.Math.DegToRad(attack.s.angle)) * attack.speed;
+        attack.s.y +=
+          Math.sin(Phaser.Math.DegToRad(attack.s.angle)) * attack.speed;
+
+        const collides = this.physics.collide(attack.s, player.s);
+        const outside =
+          attack.s.x < 0 ||
+          attack.s.y > 800 ||
+          attack.s.y < 0 ||
+          attack.s.y > 600;
+
+        if (collides || outside) {
+          attack.s.destroy();
+          opponentAttacks[i] = undefined;
+        }
+
+        if (collides) {
+          hurtPlayer(1);
+        }
+      }
+
+      if (turn.type !== "play" || !song) {
+        playEffect.container.setAlpha(anim(playEffect.container.alpha, 0));
+        if (playEffect.container.alpha < 0.05) {
+          playEffect.container.y = 0;
+        }
+      } else {
+        const d = getT();
+        const p = song.endsAt;
+
+        playEffect.sovningen.setVisible(song.name === "sovningen");
+        playEffect.skaningen.setVisible(song.name === "skaningen");
+
+        playEffect.container.y = -20 * (d / p);
+        playEffect.container.setAlpha(
+          anim(playEffect.container.alpha, 0.1 + (0.9 * d) / p)
+        );
+      }
+
+      if (!effects.some((x) => x.type === "lightning")) {
         const sp = 4;
         if (keys.left.isDown) {
           player.s.x -= sp;
@@ -488,16 +603,17 @@ export function battle():
         }
       }
 
-
       player.s.x = Phaser.Math.Clamp(player.s.x, 100, 360);
       player.s.y = Phaser.Math.Clamp(player.s.y, 60, 345);
 
-      // explosions
+      // effects
       {
-        const doNotDestroy: typeof explosions = [];
-        for (const explosion of explosions) {
+        const doNotDestroy: typeof effects = [];
+        for (const explosion of effects) {
           const i = Math.floor(
-            explosion.frames * (animationTimer - explosion.start) * (1 / explosion.length)
+            explosion.frames *
+              (animationTimer - explosion.start) *
+              (1 / explosion.length)
           );
 
           if (i < explosion.frames) {
@@ -508,8 +624,8 @@ export function battle():
           }
         }
 
-        if (doNotDestroy.length < explosions.length) {
-          explosions = doNotDestroy;
+        if (doNotDestroy.length < effects.length) {
+          effects = doNotDestroy;
         }
       }
 
@@ -559,7 +675,7 @@ export function battle():
 
           if (collides) {
             enemy.health -= 1;
-            createExplosion(knife.s.x, knife.s.y)
+            createExplosion(knife.s.x, knife.s.y);
           }
 
           if (collides || outside) {
@@ -574,14 +690,18 @@ export function battle():
         }
       }
 
-      enemy.s.setFrame(enemy.status?.type === 'sleepy' ? ENEMY_FRAME_SLEEPY : ENEMY_FRAME_NORMAL)
+      enemy.s.setFrame(
+        enemy.status?.type === "sleepy"
+          ? ENEMY_FRAME_SLEEPY
+          : ENEMY_FRAME_NORMAL
+      );
 
       if (turn.type === "shoot") {
         textObj.text = turn.text + "\nSkott kvar: " + turn.shots;
       } else if (turn.type === "opponent" && turn.playedEffect) {
-        textObj.text = turn.text + '\n[space] för att fortsätta';
-      }  else if (turn.type === 'win') {
-        textObj.text = 'Du vann\n' + turn.text + '\n[space] för att fortsätta'
+        textObj.text = turn.text + "\n[space] för att fortsätta";
+      } else if (turn.type === "win") {
+        textObj.text = "Du vann\n" + turn.text + "\n[space] för att fortsätta";
       } else {
         textObj.text = turn.text;
       }
@@ -596,15 +716,15 @@ export function battle():
         }
       }
 
-      if (turn.type === 'loose') {
-        gameOver.alpha = anim(gameOver.alpha, 1)
+      if (turn.type === "loose") {
+        gameOver.alpha = anim(gameOver.alpha, 1);
       } else {
-        gameOver.alpha = anim(gameOver.alpha, 0)
+        gameOver.alpha = anim(gameOver.alpha, 0);
       }
 
       sheet.s.setVisible(turn.type === "play");
 
-      if (song && turn.type === 'play') {
+      if (song && turn.type === "play") {
         const timeSinceStart = getT();
 
         line.s.x =
@@ -623,46 +743,46 @@ export function battle():
               text = "Väldigt skrämmande";
               enemy.status = {
                 type: "fearful",
-                strength: 'much'
-              }
+                strength: "much",
+              };
             } else if (score > 0.3) {
               text = "Lite skrämmande ändå";
               enemy.status = {
                 type: "fearful",
-                strength: 'some'
-              }
+                strength: "some",
+              };
             } else {
               text = "Ingen effekt";
               enemy.status = {
                 type: "fearful",
-                strength: 'none'
-              }
+                strength: "none",
+              };
             }
           } else if (song.name === "sovningen") {
             if (score > 0.7) {
               text = "Väldigt sömnigt";
               enemy.status = {
                 type: "sleepy",
-                strength: 'much'
-              }
+                strength: "much",
+              };
             } else if (score > 0.3) {
               text = "Lite trött verkar fågeln bli";
               enemy.status = {
                 type: "sleepy",
-                strength: 'some'
-              }
+                strength: "some",
+              };
             } else {
               text = "Ingen effekt";
               enemy.status = {
                 type: "sleepy",
-                strength: 'none'
-              }
+                strength: "none",
+              };
             }
           } else {
             throw Error("Unknown song");
           }
 
-          turn.text = text + '\n[tryck space]';
+          turn.text = text + "\n[tryck space]";
 
           clearSong(song);
           clearPlayedNotes(playedNotes);
@@ -674,35 +794,48 @@ export function battle():
         enemy.s.y += 10;
         enemy.s.flipY = true;
         turn = {
-          type: 'win',
-          text: 'Fågeln dog',
-        }
+          type: "win",
+          text: "Fågeln dog",
+        };
       } else {
-        if (enemy.status?.type === 'sleepy' && enemy.status.strength === "much") {
-          enemy.s.x = enemy.sx;
-          enemy.s.y = enemy.sy;
-        } else {
-
-          if (enemy.status?.type === 'sleepy' && enemy.status.strength === "some") {
-            enemy.speed = anim(enemy.speed, 0.25);
-          } if (enemy.status?.type === 'sleepy' && enemy.status.strength === "much") {
-            enemy.speed = anim(enemy.speed, 0);
-          } else {
-            enemy.speed = anim(enemy.speed, 1);
-          }
-
-          const dx = animation_long_floaty[
-            animationTimer % animation_long_floaty.length
-          ][0] * (1/50) * 16 * 10 * enemy.speed;
-
-          const dy = animation_long_floaty[
-            animationTimer % animation_long_floaty.length
-          ][1] * (1/50) * 16 * 10 * enemy.speed;
-
-
-          enemy.s.x = enemy.sx + dx;
-          enemy.s.y = enemy.sy + dy;
+        if (
+          enemy.status?.type === "sleepy" &&
+          enemy.status.strength === "some"
+        ) {
+          enemy.speed = anim(enemy.speed, 0.25);
         }
+        if (
+          enemy.status?.type === "sleepy" &&
+          enemy.status.strength === "much"
+        ) {
+          enemy.speed = anim(enemy.speed, 0);
+        } else {
+          enemy.speed = anim(enemy.speed, 1);
+        }
+
+        const q = enemy.status?.type === 'fearful' && enemy.status?.strength !== 'none';
+
+        const w = q ? 40 : 160;
+
+        const dx =
+          animation_long_floaty[
+            animationTimer % animation_long_floaty.length
+          ][0] *
+          (1 / 50) *
+          w *
+          enemy.speed;
+
+        const dy =
+          animation_long_floaty[
+            animationTimer % animation_long_floaty.length
+          ][1] *
+          (1 / 50) *
+          16 *
+          10 *
+          enemy.speed;
+
+        enemy.s.x = enemy.sx + (q ? 100 : 0) + dx;
+        enemy.s.y = enemy.sy + dy;
       }
 
       const ex = enemy.s.x - 50;
@@ -710,10 +843,11 @@ export function battle():
 
       enemy.healthBar.back.setPosition(ex, ey);
       enemy.healthBar.front.setPosition(ex, ey);
-      enemy.healthBar.front.width = (enemy.healthBar.back.width * (enemy.health / enemy.maxHealth));
+      enemy.healthBar.front.width =
+        enemy.healthBar.back.width * (enemy.health / enemy.maxHealth);
 
-      enemy.healthBar.back.setVisible(turn.type !== 'win');
-      enemy.healthBar.front.setVisible(turn.type !== 'win');
+      enemy.healthBar.back.setVisible(turn.type !== "win");
+      enemy.healthBar.front.setVisible(turn.type !== "win");
 
       if (restart) {
         this.children.removeAll();

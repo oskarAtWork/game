@@ -1,4 +1,8 @@
 import adamUrl from '../assets/adam.png';
+import adamPlay1 from '../assets/adam-play-1.png';
+import adamPlay2 from '../assets/adam-play-2.png';
+import adamPlay3 from '../assets/adam-play-3.png';
+import adamPlay4 from '../assets/adam-play-4.png';
 import mollyUrl from '../assets/molly.png';
 import oskarUrl from '../assets/oskar.png';
 import biatareUrl from '../assets/biatare_normal.png';
@@ -27,6 +31,11 @@ export function preloadPeople(scene: Phaser.Scene) {
   scene.load.image('tajgablåstjärt', tajgablastjartUrl);
   scene.load.image('biatare', biatareUrl);
   scene.load.image('klara', klaraUrl);
+
+  scene.load.image('adam-play-1', adamPlay1);
+  scene.load.image('adam-play-2', adamPlay2);
+  scene.load.image('adam-play-3', adamPlay3);
+  scene.load.image('adam-play-4', adamPlay4);
 }
 
 export type Names = 'oskar' | 'molly' | 'adam' | 'klara' | 'silkeshäger' | 'biatare' | 'tajgablåstjärt';
