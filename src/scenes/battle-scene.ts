@@ -1,9 +1,15 @@
 import "phaser";
-import backgroundUrl from "../../assets/forest_background.png";
+import backgroundUrl from "../../assets/tile-layout.png";
 import gameOverUrl from "../../assets/game_over.png";
 import heartUrl from "../../assets/heart.png";
 import knifeUrl from "../../assets/knife.png";
 import explosionUrl from "../../assets/explosion.png";
+import lightningUrl from "../../assets/lightning.png";
+
+const anim = (from: number, to: number) => {
+  return from * 0.95 + to * 0.05;
+}
+
 
 import { ENEMY_FRAME_NORMAL, ENEMY_FRAME_SLEEPY, Enemy } from "../enemy";
 import { skaningen, sovningen } from "../songs/songs";
@@ -18,19 +24,14 @@ import { createSheet, Sheet } from "../sheet";
 import { preload } from "../preload/preload";
 import { getCurrentLevel, goToNextScene } from "../progression";
 import {
-  createPerson,
-  DialogPerson,
   preloadPeople,
-  updatePerson,
 } from "../dialog-person";
-import { animation_demo, animation_long_floaty } from "../animations";
+import { animation_long_floaty } from "../animations";
 import { preloadSongs } from "../preload/preload-song";
+import { Player } from "../player";
 
 const knifeSongTimings = [2949, 3882, 4883, 5785, 6837, 7571, 8597];
 const knifeSongEnd = 9000;
-
-const throwPositionX = 250;
-const throwPositionY = 400;
 
 const howClose = (knifeT: number) => {
   const a = knifeSongTimings.map((x) => Math.abs(x - knifeT));
@@ -92,11 +93,11 @@ export function battle():
   | Phaser.Types.Scenes.SettingsConfig
   | Phaser.Types.Scenes.CreateSceneFromObjectConfig {
   let enemy: Enemy;
-  let player: DialogPerson;
   let sheet: Sheet;
   let line: {
     s: Phaser.GameObjects.Image;
   };
+  let player: Player;
 
   let song: undefined | Song;
   let textObj: Phaser.GameObjects.Text;
@@ -128,8 +129,10 @@ export function battle():
   };
 
   let explosions: {
+    type: 'explosion' | 'lightning',
     start: number;
     length: number;
+    frames: number;
     s: Phaser.GameObjects.Sprite;
   }[];
 
@@ -139,10 +142,61 @@ export function battle():
 
   function createExplosion(x: number, y: number) {
     explosions.push({
+      type: 'explosion',
       start: animationTimer,
       length: 100,
+      frames: 10,
       s: context.add.sprite(x, y, "explosion"),
     });
+  }
+
+  function createLightning(x: number, y: number) {
+    explosions.push({
+      type: 'lightning',
+      start: animationTimer,
+      length: 50,
+      frames: 9,
+      s: context.add.sprite(x, y, "lightning"),
+    });
+
+    explosions.push({
+      type: 'lightning',
+      start: animationTimer,
+      length: 50,
+      frames: 9,
+      s: context.add.sprite(x, y-100, "lightning"),
+    });
+
+    explosions.push({
+      type: 'lightning',
+      start: animationTimer,
+      length: 50,
+      frames: 9,
+      s: context.add.sprite(x, y-200, "lightning"),
+    });
+
+    explosions.push({
+      type: 'lightning',
+      start: animationTimer,
+      length: 50,
+      frames: 9,
+      s: context.add.sprite(x, y - 300, "lightning"),
+    });
+
+    explosions.push({
+      type: 'lightning',
+      start: animationTimer,
+      length: 50,
+      frames: 9,
+      s: context.add.sprite(x, y-400, "lightning"),
+    });
+  }
+
+  let keys: {
+    left: Phaser.Input.Keyboard.Key;
+    right: Phaser.Input.Keyboard.Key;
+    up: Phaser.Input.Keyboard.Key;
+    down: Phaser.Input.Keyboard.Key;
   }
 
   function create(c: Phaser.Scene) {
@@ -158,6 +212,13 @@ export function battle():
     turn = TURN_SELECT;
     const level = getCurrentLevel();
 
+    keys = {
+      left: context.input.keyboard!!.addKey('left'),
+      right: context.input.keyboard!!.addKey('right'),
+      down: context.input.keyboard!!.addKey('down'),
+      up: context.input.keyboard!!.addKey('up'),
+    }
+
     if (level.sceneKey !== "BattleScene") {
       window.alert(
         "Oh no, wrong level, at battle scene " + JSON.stringify(level)
@@ -165,10 +226,10 @@ export function battle():
       throw Error("Oh no, wrong level");
     }
 
-    const br = context.add
+    context.add
       .image(0, 0, "background")
       .setOrigin(0, 0)
-      .setInteractive();
+
     sheet = createSheet(context);
 
     line = {
@@ -177,9 +238,11 @@ export function battle():
     line.s.setOrigin(0, 0);
     line.s.setVisible(false);
 
-    player = createPerson(context, "adam");
+    player = {
+      s: context.add.image(230, 220, 'adam').setScale(0.25),
+    }
 
-    const enemyImage = context.physics.add.sprite(600, 320, level.battleData.name, 0);
+    const enemyImage = context.physics.add.sprite(560, 220, level.battleData.name, 0).setScale(0.75);
 
     enemy = {
       s: enemyImage,
@@ -197,32 +260,14 @@ export function battle():
       maxHealth: 10,
       status: undefined,
       hasEarMuffs: false,
+      speed: 1,
     };
 
     context.add.image(0, 0, "dialog").setOrigin(0, 0);
 
-    for (let i = 0; i < 1; i++) {
+    for (let i = 0; i < 10; i++) {
       hp.push(context.add.image(20 + i * 30, 460, "heart"));
     }
-
-    br.on("pointerdown", () => {
-      if (turn.type === "shoot" && turn.shots > 0) {
-        turn = { ...turn, shots: turn.shots - 1 };
-
-        const knife = context.physics.add.sprite(
-          throwPositionX,
-          throwPositionY,
-          "knife"
-        );
-
-        knife.rotation =
-          knifeState.angle +
-          Math.random() * knifeState.spread * 2 -
-          knifeState.spread;
-
-        attacks.push({ s: knife, destroy: false, speed: 12 });
-      }
-    });
 
     context.input.keyboard?.on("keydown", (ev: KeyboardEvent) => {
       const key = ev.key.toUpperCase();
@@ -233,6 +278,23 @@ export function battle():
           restart = true;
         }
         return;
+      }
+
+      if (turn.type === "shoot" && turn.shots > 0 && ev.key === ' ') {
+        turn = { ...turn, shots: turn.shots - 1 };
+
+        const knife = context.physics.add.sprite(
+          player.s.x,
+          player.s.y,
+          "knife"
+        );
+
+        knife.rotation =
+          knifeState.angle +
+          Math.random() * knifeState.spread * 2 -
+          knifeState.spread;
+
+        attacks.push({ s: knife, destroy: false, speed: 12 });
       }
 
       if (key === 'Q') {
@@ -290,6 +352,7 @@ export function battle():
           }
 
           if (strength) {
+            createLightning(player.s.x, player.s.y);
             for (let i = 0; i < strength; i++) {
               const heart = hp.pop();
   
@@ -396,6 +459,11 @@ export function battle():
         frameHeight: 100,
       });
 
+      this.load.spritesheet("lightning", lightningUrl, {
+        frameWidth: 50,
+        frameHeight: 100,
+      });
+
       this.load.image("game_over", gameOverUrl)
     },
     create() {
@@ -404,15 +472,35 @@ export function battle():
     update() {
       animationTimer++;
 
+      if (!explosions.some((x) => x.type === 'lightning')) {
+        const sp = 4;
+        if (keys.left.isDown) {
+          player.s.x -= sp;
+        }
+        if (keys.right.isDown) {
+          player.s.x += sp;
+        }
+        if (keys.up.isDown) {
+          player.s.y -= sp;
+        }
+        if (keys.down.isDown) {
+          player.s.y += sp;
+        }
+      }
+
+
+      player.s.x = Phaser.Math.Clamp(player.s.x, 100, 360);
+      player.s.y = Phaser.Math.Clamp(player.s.y, 60, 345);
+
       // explosions
       {
         const doNotDestroy: typeof explosions = [];
         for (const explosion of explosions) {
           const i = Math.floor(
-            10 * (animationTimer - explosion.start) * (1 / explosion.length)
+            explosion.frames * (animationTimer - explosion.start) * (1 / explosion.length)
           );
 
-          if (i < 10) {
+          if (i < explosion.frames) {
             explosion.s.setFrame(i);
             doNotDestroy.push(explosion);
           } else {
@@ -431,12 +519,7 @@ export function battle():
         knifeState.aimLineUpper.setVisible(turn.type === "shoot");
 
         const dist = howClose(getT());
-        const angle = Phaser.Math.Angle.Between(
-          throwPositionX,
-          throwPositionY,
-          this.input.x,
-          this.input.y
-        );
+        const angle = 0;
 
         const angleLower = angle + dist * Phaser.Math.DegToRad(45);
         const angleUpper = angle - dist * Phaser.Math.DegToRad(45);
@@ -447,16 +530,16 @@ export function battle():
         knifeState.angle = angle;
 
         knifeState.aimLineUpper.setTo(
-          throwPositionX,
-          throwPositionY,
-          throwPositionX + Math.cos(angleUpper) * 1000,
-          throwPositionY + Math.sin(angleUpper) * 1000
+          player.s.x,
+          player.s.y,
+          player.s.x + Math.cos(angleUpper) * 1000,
+          player.s.y + Math.sin(angleUpper) * 1000
         );
         knifeState.aimLineLower.setTo(
-          throwPositionX,
-          throwPositionY,
-          throwPositionX + Math.cos(angleLower) * 1000,
-          throwPositionY + Math.sin(angleLower) * 1000
+          player.s.x,
+          player.s.y,
+          player.s.x + Math.cos(angleLower) * 1000,
+          player.s.y + Math.sin(angleLower) * 1000
         );
 
         let remove = false;
@@ -491,13 +574,6 @@ export function battle():
         }
       }
 
-      enemy.healthBar.back.setPosition(enemy.sx, enemy.sy - 180);
-      enemy.healthBar.front.setPosition(enemy.sx, enemy.sy - 180);
-      enemy.healthBar.front.width = (enemy.healthBar.back.width * (enemy.health / enemy.maxHealth));
-
-      enemy.healthBar.back.setVisible(turn.type !== 'win');
-      enemy.healthBar.front.setVisible(turn.type !== 'win');
-
       enemy.s.setFrame(enemy.status?.type === 'sleepy' ? ENEMY_FRAME_SLEEPY : ENEMY_FRAME_NORMAL)
 
       if (turn.type === "shoot") {
@@ -521,18 +597,12 @@ export function battle():
       }
 
       if (turn.type === 'loose') {
-        gameOver.alpha = gameOver.alpha * 0.95 + 1 * 0.05;
+        gameOver.alpha = anim(gameOver.alpha, 1)
       } else {
-        gameOver.alpha = gameOver.alpha * 0.95 + 0 * 0.05;
+        gameOver.alpha = anim(gameOver.alpha, 0)
       }
 
       sheet.s.setVisible(turn.type === "play");
-      updatePerson(
-        player,
-        turn.type === "play",
-        animationTimer,
-        animation_demo
-      );
 
       if (song && turn.type === 'play') {
         const timeSinceStart = getT();
@@ -610,23 +680,40 @@ export function battle():
       } else {
         if (enemy.status?.type === 'sleepy' && enemy.status.strength === "much") {
           enemy.s.x = enemy.sx;
-          enemy.s.y = enemy.sy + 100;
+          enemy.s.y = enemy.sy;
         } else {
-          const sp = enemy.status?.type === 'sleepy' && enemy.status.strength === "some" ? 1 : 3;
-          enemy.s.x =
-            enemy.sx +
-            animation_long_floaty[
-              animationTimer % animation_long_floaty.length
-            ][0] *
-              sp;
-          enemy.s.y =
-            enemy.sy +
-            animation_long_floaty[
-              animationTimer % animation_long_floaty.length
-            ][1] *
-              sp;
+
+          if (enemy.status?.type === 'sleepy' && enemy.status.strength === "some") {
+            enemy.speed = anim(enemy.speed, 0.25);
+          } if (enemy.status?.type === 'sleepy' && enemy.status.strength === "much") {
+            enemy.speed = anim(enemy.speed, 0);
+          } else {
+            enemy.speed = anim(enemy.speed, 1);
+          }
+
+          const dx = animation_long_floaty[
+            animationTimer % animation_long_floaty.length
+          ][0] * (1/50) * 16 * 10 * enemy.speed;
+
+          const dy = animation_long_floaty[
+            animationTimer % animation_long_floaty.length
+          ][1] * (1/50) * 16 * 10 * enemy.speed;
+
+
+          enemy.s.x = enemy.sx + dx;
+          enemy.s.y = enemy.sy + dy;
         }
       }
+
+      const ex = enemy.s.x - 50;
+      const ey = enemy.s.y - 50;
+
+      enemy.healthBar.back.setPosition(ex, ey);
+      enemy.healthBar.front.setPosition(ex, ey);
+      enemy.healthBar.front.width = (enemy.healthBar.back.width * (enemy.health / enemy.maxHealth));
+
+      enemy.healthBar.back.setVisible(turn.type !== 'win');
+      enemy.healthBar.front.setVisible(turn.type !== 'win');
 
       if (restart) {
         this.children.removeAll();

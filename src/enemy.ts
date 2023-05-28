@@ -22,6 +22,7 @@ export type Enemy = {
   maxHealth: number;
   text: Phaser.GameObjects.Text;
   s: Phaser.GameObjects.Sprite;
+  speed: number;
   sx: number;
   sy: number;
 }
