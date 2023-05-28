@@ -38,7 +38,8 @@ export function preloadPeople(scene: Phaser.Scene) {
   scene.load.image('adam-play-4', adamPlay4);
 }
 
-export type Names = 'oskar' | 'molly' | 'adam' | 'klara' | 'silkeshäger' | 'biatare' | 'tajgablåstjärt';
+export type BirdNames = 'silkeshäger' | 'biatare' | 'tajgablåstjärt';
+export type Names = 'oskar' | 'molly' | 'adam' | 'klara' | BirdNames;
 
 export const xPosition = (name: Names): number => {
   switch (name) {

@@ -11,7 +11,14 @@ const anim = (from: number, to: number) => {
   return from * 0.95 + to * 0.05;
 };
 
-import { ENEMY_FRAME_NORMAL, ENEMY_FRAME_SLEEPY, Enemy } from "../enemy";
+import {
+  ENEMY_FRAME_NORMAL,
+  ENEMY_FRAME_SLEEPY,
+  Enemy,
+  braveBoundary,
+  normalBoundary,
+  scaredBoundary,
+} from "../enemy";
 import { skaningen, sovningen } from "../songs/songs";
 import {
   clearPlayedNotes,
@@ -27,6 +34,7 @@ import { preloadPeople } from "../dialog-person";
 import { animation_long_floaty } from "../animations";
 import { preloadSongs } from "../preload/preload-song";
 import { Player } from "../player";
+import { animBoundary, centerX, centerY } from "../boundary";
 
 const knifeSongTimings = [2949, 3882, 4883, 5785, 6837, 7571, 8597];
 const knifeSongEnd = 9000;
@@ -67,7 +75,6 @@ type Turn =
   | {
       type: "opponent";
       text: string;
-      playedEffect: boolean;
     }
   | {
       type: "win";
@@ -96,6 +103,7 @@ export function battle():
     s: Phaser.GameObjects.Image;
   };
   let player: Player;
+  let boundary: Phaser.GameObjects.Rectangle;
 
   let song: undefined | Song;
   let textObj: Phaser.GameObjects.Text;
@@ -203,45 +211,21 @@ export function battle():
   }
 
   function createLightning(x: number, y: number) {
-    effects.push({
-      type: "lightning",
-      start: animationTimer,
-      length: 50,
-      frames: 9,
-      s: context.add.sprite(x, y, "lightning"),
-    });
+    for (let i = 0; i < 10; i++) {
+      const yy = y - i * 100;
 
-    effects.push({
-      type: "lightning",
-      start: animationTimer,
-      length: 50,
-      frames: 9,
-      s: context.add.sprite(x, y - 100, "lightning"),
-    });
+      if (yy < -50) {
+        break;
+      }
 
-    effects.push({
-      type: "lightning",
-      start: animationTimer,
-      length: 50,
-      frames: 9,
-      s: context.add.sprite(x, y - 200, "lightning"),
-    });
-
-    effects.push({
-      type: "lightning",
-      start: animationTimer,
-      length: 50,
-      frames: 9,
-      s: context.add.sprite(x, y - 300, "lightning"),
-    });
-
-    effects.push({
-      type: "lightning",
-      start: animationTimer,
-      length: 50,
-      frames: 9,
-      s: context.add.sprite(x, y - 400, "lightning"),
-    });
+      effects.push({
+        type: "lightning",
+        start: animationTimer,
+        length: 50,
+        frames: 9,
+        s: context.add.sprite(x, yy, "lightning"),
+      });
+    }
   }
 
   let keys: {
@@ -287,10 +271,11 @@ export function battle():
 
     const enemyImage = context.physics.add
       .sprite(560, 220, level.battleData.name, 0)
-      .setScale(0.75);
+      .setScale(0.5);
 
     enemy = {
       s: enemyImage,
+      name: level.battleData.name,
       text: context.add.text(650, 10, "", {
         fontSize: "20px",
         fontFamily: "Helvetica",
@@ -305,8 +290,9 @@ export function battle():
           .setOrigin(0, 0)
           .setFillStyle(0x22ee22),
       },
-      sx: enemyImage.x,
-      sy: enemyImage.y,
+      boundary: normalBoundary(),
+      x: enemyImage.x,
+      y: enemyImage.y,
       health: 10,
       maxHealth: 10,
       status: undefined,
@@ -314,18 +300,9 @@ export function battle():
       speed: 1,
     };
 
-
     context.input.keyboard?.on("keydown", (ev: KeyboardEvent) => {
       const key = ev.key.toUpperCase();
       ev.preventDefault();
-
-      if (ev.key === ' ') {
-        let r = 10;
-        for (let i = 180 - r * 4; i <= 180 + r * 4; i += r) {
-          createBi(enemy.s.x, enemy.s.y, i);
-        }
-    
-      }
 
       if (turn.type === "loose") {
         if (ev.key === " ") {
@@ -351,7 +328,7 @@ export function battle():
         attacks.push({ s: knife, destroy: false, speed: 12 });
       }
 
-      if (key === "Q") {
+      if (key === "R") {
         restart = true;
         return;
       }
@@ -372,60 +349,16 @@ export function battle():
         }
       }
 
-      if (turn.type === "opponent") {
-        if (!turn.playedEffect) {
-          let r = 8;
-          for (let i = 180 - r * 4; i <= 180 + r * 4; i += r) {
-            createBi(enemy.s.x, enemy.s.y, i);
-          }
-          turn.playedEffect = true;
-
-          /*
-
-          let strength: number;
-
-          if (enemy.status?.type === "sleepy") {
-            if (enemy.status.strength === "much") {
-              turn.text = "Fågeln sov, ingen attack";
-              strength = 0;
-            } else if (enemy.status.strength === "some") {
-              turn.text = "Fågeln gjorde en svag attack (1hp)";
-              strength = 1;
-            } else {
-              turn.text = "Arg fågel, 3 hp skada";
-              strength = 3;
-            }
-          } else if (enemy.status?.type === "fearful") {
-            if (enemy.status.strength === "much" && Math.random() < 0.5) {
-              turn.text = "Rädd fågel, skakade så mycket att hen missade";
-              strength = 0;
-            }
-            if (enemy.status.strength === "some" && Math.random() < 0.25) {
-              turn.text = "Rätt rädd fågel, skakade så mycket att hen missade";
-              strength = 0;
-            } else {
-              turn.text = "Rädd fågel, 3 hp skada";
-              strength = 3;
-            }
-          } else {
-            turn.text = "Arg fågel, 3 hp skada";
-            strength = 3;
-          }
-
-          if (strength) {
-            createLightning(player.s.x, player.s.y);
-
-          }*/
-        } else {
-          turn = TURN_SELECT;
-        }
-
-        return;
-      }
-
       if (turn.type === "win") {
         if (ev.key === " ") {
           goToNextScene(context.scene);
+        }
+        return;
+      }
+
+      if (turn.type === "opponent") {
+        if (ev.key === " ") {
+          turn = TURN_SELECT;
         }
         return;
       }
@@ -493,6 +426,10 @@ export function battle():
       hp.push(context.add.image(20 + i * 30, 460, "heart"));
     }
 
+    boundary = context.add
+      .rectangle(0, 0, 100, 100)
+      .setOrigin(0, 0)
+      .setStrokeStyle(2, 0x000000);
     sheet = createSheet(context);
 
     textObj = context.add
@@ -698,7 +635,7 @@ export function battle():
 
       if (turn.type === "shoot") {
         textObj.text = turn.text + "\nSkott kvar: " + turn.shots;
-      } else if (turn.type === "opponent" && turn.playedEffect) {
+      } else if (turn.type === "opponent") {
         textObj.text = turn.text + "\n[space] för att fortsätta";
       } else if (turn.type === "win") {
         textObj.text = "Du vann\n" + turn.text + "\n[space] för att fortsätta";
@@ -710,9 +647,50 @@ export function battle():
         if (getT() > knifeSongEnd) {
           turn = {
             type: "opponent",
-            playedEffect: false,
-            text: "fågeln: Caw caaw\n[tryck space]",
+            text: "fågeln: Caw caaw",
           };
+
+          if (enemy.name === "biatare") {
+            let r = 11;
+            for (let i = 180 - r * 5; i <= 180 + r * 5; i += r) {
+              createBi(enemy.s.x, enemy.s.y, i);
+            }
+          } else {
+            let strength: number;
+
+            if (enemy.status?.type === "sleepy") {
+              if (enemy.status.strength === "much") {
+                turn.text = "Fågeln sov, ingen attack";
+                strength = 0;
+              } else if (enemy.status.strength === "some") {
+                turn.text = "Fågeln gjorde en svag attack (1hp)";
+                strength = 1;
+              } else {
+                turn.text = "Arg fågel, 3 hp skada";
+                strength = 3;
+              }
+            } else if (enemy.status?.type === "fearful") {
+              if (enemy.status.strength === "much" && Math.random() < 0.5) {
+                turn.text = "Rädd fågel, skakade så mycket att hen missade";
+                strength = 0;
+              }
+              if (enemy.status.strength === "some" && Math.random() < 0.25) {
+                turn.text =
+                  "Rätt rädd fågel, skakade så mycket att hen missade";
+                strength = 0;
+              } else {
+                turn.text = "Rädd fågel, 3 hp skada";
+                strength = 3;
+              }
+            } else {
+              turn.text = "Arg fågel, 3 hp skada";
+              strength = 3;
+            }
+
+            if (strength) {
+              createLightning(player.s.x, player.s.y);
+            }
+          }
         }
       }
 
@@ -798,6 +776,23 @@ export function battle():
           text: "Fågeln dog",
         };
       } else {
+        const scared =
+          enemy.status?.type === "fearful" && enemy.status?.strength !== "none";
+
+        enemy.boundary = animBoundary(
+          enemy.boundary,
+          scared ? scaredBoundary() : braveBoundary()
+        );
+        boundary.x = enemy.boundary.left;
+        boundary.y = enemy.boundary.top;
+
+
+        boundary.displayWidth = enemy.boundary.right - enemy.boundary.left;
+        boundary.displayHeight = enemy.boundary.bottom - enemy.boundary.top;
+
+        enemy.x = anim(enemy.x, centerX(enemy.boundary));
+        enemy.y = anim(enemy.y, centerY(enemy.boundary));
+
         if (
           enemy.status?.type === "sleepy" &&
           enemy.status.strength === "some"
@@ -813,16 +808,13 @@ export function battle():
           enemy.speed = anim(enemy.speed, 1);
         }
 
-        const q = enemy.status?.type === 'fearful' && enemy.status?.strength !== 'none';
-
-        const w = q ? 40 : 160;
-
         const dx =
           animation_long_floaty[
             animationTimer % animation_long_floaty.length
           ][0] *
           (1 / 50) *
-          w *
+          (enemy.boundary.right - enemy.boundary.left) *
+          (1 / 2) *
           enemy.speed;
 
         const dy =
@@ -830,12 +822,12 @@ export function battle():
             animationTimer % animation_long_floaty.length
           ][1] *
           (1 / 50) *
-          16 *
-          10 *
+          (enemy.boundary.bottom - enemy.boundary.top) *
+          (1 / 2) *
           enemy.speed;
 
-        enemy.s.x = enemy.sx + (q ? 100 : 0) + dx;
-        enemy.s.y = enemy.sy + dy;
+        enemy.s.x = enemy.x + dx;
+        enemy.s.y = enemy.y + dy;
       }
 
       const ex = enemy.s.x - 50;
