@@ -3,7 +3,7 @@ import mollyUrl from '../assets/molly.png';
 import oskarUrl from '../assets/oskar.png';
 import biatareUrl from '../assets/biatare_normal.png';
 import tajgablastjartUrl from '../assets/tajgablastjart_normal.png';
-import silkäsHägerUrl from '../assets/silkeshager_normal.png';
+import silkäsHägerUrl from '../assets/silkeshager_sheet.png';
 import klaraUrl from '../assets/klara.png';
 import { EnterAction } from './dialogue_script/scene-utils';
 import { exhaust } from './helper';
@@ -22,7 +22,8 @@ export function preloadPeople(scene: Phaser.Scene) {
   scene.load.image('adam', adamUrl);
   scene.load.image('molly', mollyUrl);
   scene.load.image('oskar', oskarUrl);
-  scene.load.image('silkeshäger', silkäsHägerUrl);
+  
+  scene.load.spritesheet('silkeshäger', silkäsHägerUrl, { frameWidth: 100, frameHeight: 100});
   scene.load.image('tajgablåstjärt', tajgablastjartUrl);
   scene.load.image('biatare', biatareUrl);
   scene.load.image('klara', klaraUrl);

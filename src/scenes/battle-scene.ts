@@ -1,10 +1,11 @@
 import "phaser";
 import backgroundUrl from "../../assets/forest_background.png";
+import gameOverUrl from "../../assets/game_over.png";
 import heartUrl from "../../assets/heart.png";
 import knifeUrl from "../../assets/knife.png";
 import explosionUrl from "../../assets/explosion.png";
 
-import { displayEnemyStats, Enemy } from "../enemy";
+import { ENEMY_FRAME_NORMAL, ENEMY_FRAME_SLEEPY, Enemy } from "../enemy";
 import { skaningen, sovningen } from "../songs/songs";
 import {
   clearPlayedNotes,
@@ -37,7 +38,7 @@ const howClose = (knifeT: number) => {
   a.sort((a, b) => a - b);
 
   const smallest = a[0];
-  const nice = 1000;
+  const nice = 500;
 
   if (smallest < nice) {
     return smallest / nice;
@@ -50,35 +51,28 @@ type Turn =
   | {
       type: "select";
       text: string;
-      endAt?: never;
     }
   | {
       type: "play";
       text: string;
-      endAt?: never;
     }
   | {
-      type: "effect";
+      type: "loose";
       text: string;
-      endAt: number;
     }
   | {
       type: "shoot";
       text: string;
       shots: number;
-      endAt?: never;
     }
   | {
       type: "opponent";
       text: string;
       playedEffect: boolean;
-      effectText: string;
-      strength: number;
     }
   | {
       type: "win";
       text: string;
-      endAt?: never;
     };
 
 const TURN_SELECT = {
@@ -108,11 +102,13 @@ export function battle():
   let textObj: Phaser.GameObjects.Text;
   let playedNotes: { s: Phaser.GameObjects.Image; hit: boolean }[];
 
-  let turn: Turn = TURN_SELECT;
+  let turn: Turn;
   let hp: Phaser.GameObjects.Image[];
 
   let animationTimer: number;
   let lastT: number;
+
+  let restart: boolean;
 
   const getT = () => Date.now() - delay - lastT;
 
@@ -137,6 +133,8 @@ export function battle():
     s: Phaser.GameObjects.Sprite;
   }[];
 
+  let gameOver: Phaser.GameObjects.Image;
+
   let context: Phaser.Scene;
 
   function createExplosion(x: number, y: number) {
@@ -145,6 +143,242 @@ export function battle():
       length: 100,
       s: context.add.sprite(x, y, "explosion"),
     });
+  }
+
+  function create(c: Phaser.Scene) {
+    context = c;
+    context.game.sound.pauseOnBlur = false;
+    restart = false;
+    lastT = 0;
+    animationTimer = 0;
+    playedNotes = [];
+    hp = [];
+    attacks = [];
+    explosions = [];
+    turn = TURN_SELECT;
+    const level = getCurrentLevel();
+
+    if (level.sceneKey !== "BattleScene") {
+      window.alert(
+        "Oh no, wrong level, at battle scene " + JSON.stringify(level)
+      );
+      throw Error("Oh no, wrong level");
+    }
+
+    const br = context.add
+      .image(0, 0, "background")
+      .setOrigin(0, 0)
+      .setInteractive();
+    sheet = createSheet(context);
+
+    line = {
+      s: context.add.image(300, 20, "line"),
+    };
+    line.s.setOrigin(0, 0);
+    line.s.setVisible(false);
+
+    player = createPerson(context, "adam");
+
+    const enemyImage = context.physics.add.sprite(600, 320, level.battleData.name, 0);
+
+    enemy = {
+      s: enemyImage,
+      text: context.add.text(650, 10, "", {
+        fontSize: "20px",
+        fontFamily: "Helvetica",
+      }),
+      healthBar: {
+        back: context.add.rectangle(0, 0, 100, 10).setOrigin(0, 0).setFillStyle(0x000000),
+        front: context.add.rectangle(0, 0, 100, 10).setOrigin(0, 0).setFillStyle(0x22ee22),
+      },
+      sx: enemyImage.x,
+      sy: enemyImage.y,
+      health: 10,
+      maxHealth: 10,
+      status: undefined,
+      hasEarMuffs: false,
+    };
+
+    context.add.image(0, 0, "dialog").setOrigin(0, 0);
+
+    for (let i = 0; i < 1; i++) {
+      hp.push(context.add.image(20 + i * 30, 460, "heart"));
+    }
+
+    br.on("pointerdown", () => {
+      if (turn.type === "shoot" && turn.shots > 0) {
+        turn = { ...turn, shots: turn.shots - 1 };
+
+        const knife = context.physics.add.sprite(
+          throwPositionX,
+          throwPositionY,
+          "knife"
+        );
+
+        knife.rotation =
+          knifeState.angle +
+          Math.random() * knifeState.spread * 2 -
+          knifeState.spread;
+
+        attacks.push({ s: knife, destroy: false, speed: 12 });
+      }
+    });
+
+    context.input.keyboard?.on("keydown", (ev: KeyboardEvent) => {
+      const key = ev.key.toUpperCase();
+      ev.preventDefault();
+
+      if (turn.type === 'loose') {
+        if (ev.key === ' ') {
+          restart = true;
+        }
+        return;
+      }
+
+      if (key === 'Q') {
+        restart = true;
+        return;
+      }
+
+      if (turn.type === 'play') {
+        if (ev.key === ' ') {
+          if (!song || getT() > song.endsAt) {
+            context.sound.play("knifeSong");
+            lastT = Date.now();
+
+            turn = {
+              type: "shoot",
+              shots: 7,
+              text: 'Klicka för att skjuta (i takt)'
+            };
+          }
+          return;
+        }
+      }
+
+      if (turn.type === 'opponent') {
+        if (!turn.playedEffect) {
+          turn.playedEffect = true;
+
+          let strength: number;
+
+          if (enemy.status?.type === 'sleepy') {
+            if (enemy.status.strength === 'much') {
+              turn.text = 'Fågeln sov, ingen attack';
+              strength = 0;
+            } else if (enemy.status.strength === 'some') {
+              turn.text = 'Fågeln gjorde en svag attack (1hp)';
+              strength = 1;
+            } else {
+              turn.text = 'Arg fågel, 3 hp skada';
+              strength = 3;
+            }
+          } else if (enemy.status?.type === 'fearful') {
+            if (enemy.status.strength === 'much' && Math.random() < 0.5) {
+              turn.text = 'Rädd fågel, skakade så mycket att hen missade';
+              strength = 0;
+            } if (enemy.status.strength === 'some' && Math.random() < 0.25) {
+              turn.text = 'Rätt rädd fågel, skakade så mycket att hen missade';
+              strength = 0;
+            } else {
+              turn.text = 'Rädd fågel, 3 hp skada';
+              strength = 3;
+            }
+          } else {
+            turn.text = 'Arg fågel, 3 hp skada';
+            strength = 3;
+          }
+
+          if (strength) {
+            for (let i = 0; i < strength; i++) {
+              const heart = hp.pop();
+  
+              if (heart) {
+                createExplosion(heart.x, heart.y)
+                heart.destroy();
+              }
+            }
+
+            if (!hp.length) {
+              turn = {
+                type: 'loose',
+                text: 'Ajdå\n[space] för att testa igen',
+              }
+            }
+          }
+        } else {
+          turn = TURN_SELECT;
+        }
+
+        return;
+      }
+
+      if (turn.type === "win") {
+        if (ev.key === " ") {
+          goToNextScene(context.scene);
+        }
+        return;
+      }
+
+      if (turn.type === "select") {
+        if (key === "S") {
+          context.sound.play("gasp");
+          context.scene.start(battleSceneKey);
+          return;
+        } else if (key === "D" || key === "G") {
+          context.sound.play(key === "D" ? "skaningen" : "sovningen");
+
+          clearPlayedNotes(playedNotes);
+          song =
+            key === "D" ? skaningen(context, sheet) : sovningen(context, sheet);
+
+          line.s.setVisible(true);
+          lastT = Date.now();
+          turn = {
+            type: "play",
+            text: "Play using\n§1234567890",
+          };
+          return;
+        }
+      }
+
+      const now = Date.now() - lastT - delay;
+      const noteInfo = playNote(now, ev.key, song, sheet);
+
+      if (noteInfo) {
+        const note = {
+          s: context.add.image(noteInfo.x, noteInfo.y, "note"),
+          hit: noteInfo.hit,
+        };
+        playedNotes.push(note);
+      }
+    });
+
+    // ui
+    knifeState = {
+      angle: 0,
+      angleLower: 0,
+      angleUpper: 0,
+      spread: 0,
+      aimLineUpper: context.add
+        .line()
+        .setStrokeStyle(3, 0xffffff)
+        .setOrigin(0, 0),
+      aimLineLower: context.add
+        .line()
+        .setStrokeStyle(3, 0xffffff)
+        .setOrigin(0, 0),
+    };
+
+    textObj = context.add
+      .text(400, 500, "", {
+        align: "center",
+        fontSize: "1rem",
+        color: "#34567a",
+      })
+      .setOrigin(0.5, 0);
+
+    gameOver = context.add.image(0, 0, 'game_over').setOrigin(0, 0).setAlpha(0);
   }
 
   return {
@@ -161,186 +395,11 @@ export function battle():
         frameWidth: 100,
         frameHeight: 100,
       });
+
+      this.load.image("game_over", gameOverUrl)
     },
     create() {
-      this.game.sound.pauseOnBlur = false;
-      context = this;
-      lastT = 0;
-      animationTimer = 0;
-      playedNotes = [];
-      hp = [];
-      attacks = [];
-      explosions = [];
-      const level = getCurrentLevel();
-
-      if (level.sceneKey !== "BattleScene") {
-        window.alert(
-          "Oh no, wrong level, at battle scene " + JSON.stringify(level)
-        );
-        throw Error("Oh no, wrong level");
-      }
-
-      const br = this.add
-        .image(0, 0, "background")
-        .setOrigin(0, 0)
-        .setInteractive();
-      sheet = createSheet(this);
-
-      line = {
-        s: this.add.image(300, 20, "line"),
-      };
-      line.s.setOrigin(0, 0);
-      line.s.setVisible(false);
-
-      player = createPerson(this, "adam");
-
-      const enemyImage = this.physics.add.sprite(600, 320, level.battleData.name);
-
-      enemy = {
-        s: enemyImage,
-        text: this.add.text(650, 10, "", {
-          fontSize: "20px",
-          fontFamily: "Helvetica",
-        }),
-        sx: enemyImage.x,
-        sy: enemyImage.y,
-        health: 10,
-        confused: "none",
-        fearful: "none",
-        groovy: "none",
-        sleepy: "none",
-        hasEarMuffs: false,
-      };
-
-      displayEnemyStats(enemy);
-
-      this.add.image(0, 0, "dialog").setOrigin(0, 0);
-
-      for (let i = 0; i < 10; i++) {
-        hp.push(this.add.image(20 + i * 30, 460, "heart"));
-      }
-
-      br.on("pointerdown", () => {
-        if (turn.type === "shoot" && turn.shots > 0) {
-          turn = { ...turn, shots: turn.shots - 1 };
-
-          const knife = this.physics.add.sprite(
-            throwPositionX,
-            throwPositionY,
-            "knife"
-          );
-
-          knife.rotation =
-            knifeState.angle +
-            Math.random() * knifeState.spread * 2 -
-            knifeState.spread;
-
-          attacks.push({ s: knife, destroy: false, speed: 12 });
-        }
-      });
-
-      this.input.keyboard?.on("keydown", (ev: KeyboardEvent) => {
-        const key = ev.key.toUpperCase();
-        ev.preventDefault();
-
-        if (turn.type === 'play' && ev.key === ' ') {
-          if (!song || getT() > song.endsAt) {
-            this.sound.play("knifeSong");
-            lastT = Date.now();
-
-            turn = {
-              type: "shoot",
-              shots: 7,
-              text: 'Klicka för att skjuta (i takt)'
-            };
-          }
-          return;
-        }
-
-        if (turn.type === 'opponent') {
-          if (!turn.playedEffect) {
-            turn.playedEffect = true;
-
-            if (turn.type === "opponent") {
-              for (let i = 0; i < turn.strength; i++) {
-                const heart = hp.pop();
-    
-                if (heart) {
-                  createExplosion(heart.x, heart.y)
-                }
-    
-                heart?.destroy();
-              }
-            }
-          } else {
-            turn = TURN_SELECT;
-          }
-
-          return;
-        }
-
-        if (turn.type === "win" && ev.key === " ") {
-          goToNextScene(this.scene);
-          return;
-        }
-
-        if (turn.type === "select") {
-          if (key === "S") {
-            this.sound.play("gasp");
-            this.scene.start(battleSceneKey);
-            return;
-          } else if (key === "D" || key === "G") {
-            this.sound.play(key === "D" ? "skaningen" : "sovningen");
-
-            clearPlayedNotes(playedNotes);
-            song =
-              key === "D" ? skaningen(this, sheet) : sovningen(this, sheet);
-
-            line.s.setVisible(true);
-            lastT = Date.now();
-            turn = {
-              type: "play",
-              text: "Play using\n§1234567890",
-            };
-            return;
-          }
-        }
-
-        const now = Date.now() - lastT - delay;
-        const noteInfo = playNote(now, ev.key, song, sheet);
-
-        if (noteInfo) {
-          const note = {
-            s: this.add.image(noteInfo.x, noteInfo.y, "note"),
-            hit: noteInfo.hit,
-          };
-          playedNotes.push(note);
-        }
-      });
-
-      // ui
-      knifeState = {
-        angle: 0,
-        angleLower: 0,
-        angleUpper: 0,
-        spread: 0,
-        aimLineUpper: this.add
-          .line()
-          .setStrokeStyle(3, 0xffffff)
-          .setOrigin(0, 0),
-        aimLineLower: this.add
-          .line()
-          .setStrokeStyle(3, 0xffffff)
-          .setOrigin(0, 0),
-      };
-
-      textObj = this.add
-        .text(400, 500, "", {
-          align: "center",
-          fontSize: "1rem",
-          color: "#34567a",
-        })
-        .setOrigin(0.5, 0);
+      create(this)
     },
     update() {
       animationTimer++;
@@ -417,7 +476,6 @@ export function battle():
 
           if (collides) {
             enemy.health -= 1;
-            displayEnemyStats(enemy);
             createExplosion(knife.s.x, knife.s.y)
           }
 
@@ -433,10 +491,19 @@ export function battle():
         }
       }
 
+      enemy.healthBar.back.setPosition(enemy.sx, enemy.sy - 180);
+      enemy.healthBar.front.setPosition(enemy.sx, enemy.sy - 180);
+      enemy.healthBar.front.width = (enemy.healthBar.back.width * (enemy.health / enemy.maxHealth));
+
+      enemy.healthBar.back.setVisible(turn.type !== 'win');
+      enemy.healthBar.front.setVisible(turn.type !== 'win');
+
+      enemy.s.setFrame(enemy.status?.type === 'sleepy' ? ENEMY_FRAME_SLEEPY : ENEMY_FRAME_NORMAL)
+
       if (turn.type === "shoot") {
-        textObj.text = turn.text + "\nShots left: " + turn.shots;
+        textObj.text = turn.text + "\nSkott kvar: " + turn.shots;
       } else if (turn.type === "opponent" && turn.playedEffect) {
-        textObj.text = turn.effectText;
+        textObj.text = turn.text + '\n[space] för att fortsätta';
       }  else if (turn.type === 'win') {
         textObj.text = 'Du vann\n' + turn.text + '\n[space] för att fortsätta'
       } else {
@@ -447,13 +514,16 @@ export function battle():
         if (getT() > knifeSongEnd) {
           turn = {
             type: "opponent",
-            strength: 1,
-            effectText: 'Adam: Aj, det gjorde 1 skada tror jag minsann\n[tryck space]',
-            endAt: animationTimer + 60,
             playedEffect: false,
             text: "fågeln: Caw caaw\n[tryck space]",
           };
         }
+      }
+
+      if (turn.type === 'loose') {
+        gameOver.alpha = gameOver.alpha * 0.95 + 1 * 0.05;
+      } else {
+        gameOver.alpha = gameOver.alpha * 0.95 + 0 * 0.05;
       }
 
       sheet.s.setVisible(turn.type === "play");
@@ -464,7 +534,7 @@ export function battle():
         animation_demo
       );
 
-      if (song) {
+      if (song && turn.type === 'play') {
         const timeSinceStart = getT();
 
         line.s.x =
@@ -473,8 +543,6 @@ export function battle():
             ((timeSinceStart - song.startsAt) / (song.endsAt - song.startsAt));
 
         if (timeSinceStart > song.endsAt) {
-
-
           line.s.setVisible(false);
           const score = scoreSong(playedNotes, song);
 
@@ -483,34 +551,48 @@ export function battle():
           if (song.name === "skaningen") {
             if (score > 0.7) {
               text = "Väldigt skrämmande";
-              enemy.fearful = "much";
+              enemy.status = {
+                type: "fearful",
+                strength: 'much'
+              }
             } else if (score > 0.3) {
               text = "Lite skrämmande ändå";
-              enemy.fearful = "some";
+              enemy.status = {
+                type: "fearful",
+                strength: 'some'
+              }
             } else {
               text = "Ingen effekt";
-              enemy.fearful = "none";
+              enemy.status = {
+                type: "fearful",
+                strength: 'none'
+              }
             }
           } else if (song.name === "sovningen") {
             if (score > 0.7) {
-              text = "Väldigt rörande";
-              enemy.sleepy = "much";
+              text = "Väldigt sömnigt";
+              enemy.status = {
+                type: "sleepy",
+                strength: 'much'
+              }
             } else if (score > 0.3) {
-              text = "Lite effekt ändå";
-              enemy.sleepy = "some";
+              text = "Lite trött verkar fågeln bli";
+              enemy.status = {
+                type: "sleepy",
+                strength: 'some'
+              }
             } else {
               text = "Ingen effekt";
-              enemy.sleepy = "none";
+              enemy.status = {
+                type: "sleepy",
+                strength: 'none'
+              }
             }
           } else {
             throw Error("Unknown song");
           }
 
           turn.text = text + '\n[tryck space]';
-
-          if (song.name === "skaningen") {
-            displayEnemyStats(enemy);
-          }
 
           clearSong(song);
           clearPlayedNotes(playedNotes);
@@ -525,19 +607,12 @@ export function battle():
           type: 'win',
           text: 'Fågeln dog',
         }
-      } else if (enemy.fearful === "much") {
-        enemy.s.x += 10;
-        enemy.s.flipX = true;
-        turn = {
-          type: 'win',
-          text: 'Fågeln flydde',
-        }
       } else {
-        if (enemy.sleepy === "much") {
+        if (enemy.status?.type === 'sleepy' && enemy.status.strength === "much") {
           enemy.s.x = enemy.sx;
           enemy.s.y = enemy.sy + 100;
         } else {
-          const sp = enemy.sleepy === "some" ? 1 : 3;
+          const sp = enemy.status?.type === 'sleepy' && enemy.status.strength === "some" ? 1 : 3;
           enemy.s.x =
             enemy.sx +
             animation_long_floaty[
@@ -551,6 +626,13 @@ export function battle():
             ][1] *
               sp;
         }
+      }
+
+      if (restart) {
+        this.children.removeAll();
+        this.sound.stopAll();
+        create(this);
+        this.scene.restart();
       }
     },
   };

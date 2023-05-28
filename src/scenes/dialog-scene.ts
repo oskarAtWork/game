@@ -56,9 +56,6 @@ export function dialog():
 
   const onNewLine = (context: Phaser.Scene, line: Line) => {
     const otherAction = line.otherAction;
-
-
-
     if (line.speaker) {
       let person = characters.get(line.speaker)!!;
       if (otherAction?.type === "enter") {

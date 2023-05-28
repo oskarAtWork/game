@@ -1,28 +1,27 @@
 
 export type EffectStrength = 'much' | 'some' | 'none';
 
+export const ENEMY_FRAME_NORMAL = 0;
+export const ENEMY_FRAME_SLEEPY = 1;
+export const ENEMY_FRAME_CONFUSED = 2;
+export const ENEMY_FRAME_GROOVY = 3;
+
 export type Enemy = {
-  sleepy: EffectStrength;
-  fearful: EffectStrength;
-  groovy: EffectStrength;
-  confused: EffectStrength;
+  status: {
+    strength: EffectStrength;
+    type: 'sleepy' | 'fearful';
+  } | undefined;
+
+  healthBar: {
+    back: Phaser.GameObjects.Rectangle;
+    front: Phaser.GameObjects.Rectangle;
+  }
 
   hasEarMuffs: boolean;
   health: number;
+  maxHealth: number;
   text: Phaser.GameObjects.Text;
-  s: Phaser.GameObjects.Image;
+  s: Phaser.GameObjects.Sprite;
   sx: number;
   sy: number;
-}
-
-export const displayEnemyStats = (enemy: Enemy) => {
-  const str = `
-sleepy ${enemy.sleepy}
-fearful ${enemy.fearful}
-groovy ${enemy.groovy}
-confused ${enemy.confused ? 'yes' : 'no'}
-health: ${enemy.health}
-  `.trim();
-
-  enemy.text.text = str;
 }
