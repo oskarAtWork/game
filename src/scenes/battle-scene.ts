@@ -108,6 +108,9 @@ export function battle():
   };
   let player: Player;
 
+  let arrowKeysImage: Phaser.GameObjects.Image;
+  let hasMoved: boolean;
+
   let song: undefined | Song;
   let textObj: Phaser.GameObjects.Text;
   let playedNotes: { s: Phaser.GameObjects.Image; hit: boolean }[];
@@ -264,6 +267,7 @@ export function battle():
     enemies = [];
     opponentAttacks = [];
     effects = [];
+    hasMoved = true;
     const level = getCurrentLevel();
 
     keys = {
@@ -284,7 +288,7 @@ export function battle():
 
     context.add.image(0, 0, "background").setOrigin(0, 0);
 
-    context.add.image(230, 230, "arrowKeys").setAlpha(0.25);
+    arrowKeysImage = context.add.image(230, 230, "arrowKeys").setAlpha(0.25);
 
     player = {
       s: context.physics.add.image(230, 220, "adam").setScale(0.25),
@@ -412,6 +416,7 @@ export function battle():
               shots: 7,
               text: "[space] för att skjuta (i takt)",
             };
+            hasMoved = false;
           }
           return;
         }
@@ -426,9 +431,10 @@ export function battle():
 
       if (turn.type === "opponent") {
         if (ev.key === " ") {
-          turn.index += 1;
+          const turnIndex = turn.index;
+          turn.index = enemies.findIndex((e, i) => i > turnIndex && e.health > 0);
 
-          if (turn.index >= enemies.length) {
+          if (turn.index >= enemies.length || turn.index === -1) {
             turn = TURN_SELECT(level.battleData);
             enemies.forEach((e) => {e.status = undefined})
           } else {
@@ -551,6 +557,7 @@ export function battle():
     },
     update() {
       animationTimer++;
+      arrowKeysImage.alpha = hasMoved ? arrowKeysImage.alpha * 0.93: anim(arrowKeysImage.alpha, 1);
 
       for (let i = opponentAttacks.length - 1; i >= 0; i--) {
         const attack = opponentAttacks[i];
@@ -602,15 +609,19 @@ export function battle():
         const sp = 4;
         if (keys.left.isDown) {
           player.s.x -= sp;
+          hasMoved = true;
         }
         if (keys.right.isDown) {
           player.s.x += sp;
+          hasMoved = true;
         }
         if (keys.up.isDown) {
           player.s.y -= sp;
+          hasMoved = true;
         }
         if (keys.down.isDown) {
           player.s.y += sp;
+          hasMoved = true;
         }
       }
 
@@ -731,10 +742,11 @@ export function battle():
           turn = {
             type: "opponent",
             text: '...',
-            index: 0,
+            index: enemies.findIndex((e, i) => i >= 0 && e.health > 0),
           };
 
-          enemies[0].attack(enemies[0]);
+          hasMoved = false;
+          enemies[turn.index].attack(enemies[0]);
         }
       }
 
@@ -818,6 +830,19 @@ export function battle():
           song = undefined;
         }
       }
+
+      enemies.forEach((enemy) => {
+        const ex = enemy.s.x - 50;
+        const ey = enemy.s.y - 50;
+
+        enemy.healthBar.back.setPosition(ex, ey);
+        enemy.healthBar.front.setPosition(ex, ey);
+        enemy.healthBar.front.width =
+          enemy.healthBar.back.width * (enemy.health / enemy.maxHealth);
+
+        enemy.healthBar.back.setVisible(turn.type !== "win" && enemy.health > 0);
+        enemy.healthBar.front.setVisible(turn.type !== "win" && enemy.health > 0);
+      })
 
       const dead = enemies.filter((e) => e.health <= 0);
 
@@ -909,19 +934,6 @@ export function battle():
           enemy.s.x = enemy.x + dx;
           enemy.s.y = enemy.y + dy;
         }
-
-        enemies.forEach((enemy) => {
-          const ex = enemy.s.x - 50;
-          const ey = enemy.s.y - 50;
-
-          enemy.healthBar.back.setPosition(ex, ey);
-          enemy.healthBar.front.setPosition(ex, ey);
-          enemy.healthBar.front.width =
-            enemy.healthBar.back.width * (enemy.health / enemy.maxHealth);
-
-          enemy.healthBar.back.setVisible(turn.type !== "win" && enemy.health > 0);
-          enemy.healthBar.front.setVisible(turn.type !== "win" && enemy.health > 0);
-        })
       }
 
       if (restart) {
