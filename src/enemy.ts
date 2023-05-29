@@ -66,12 +66,17 @@ export const ezEnemy = (name: BirdNames, maxHealth: number, placement?: 'top' | 
     animation: {
       from: animation_long_floaty,
       to: undefined,
-      t: 0,
+      blendT: 0,
+      animationSpeed: 1,
+      animationT: 0,
     },
     hasEarMuffs: false,
     maxHealth,
     health: maxHealth,
     speed: 1,
+    animationT: 1,
+    animationSpeed: 1,
+    animationTargetSpeed: 1,
     x,
     y
   }
@@ -80,7 +85,7 @@ export const ezEnemy = (name: BirdNames, maxHealth: number, placement?: 'top' | 
 export type EnemyData = {
   status: {
     strength: EffectStrength;
-    type: 'sleepy' | 'fearful';
+    type: 'sleepy' | 'fearful' | 'hyped' | 'confused';
   } | undefined;
   name: BirdNames;
   boundary: Boundary;
@@ -88,7 +93,10 @@ export type EnemyData = {
   animation: {
     from: Animation,
     to: Animation | undefined;
-    t: number,
+    blendT: number,
+
+    animationT: number;
+    animationSpeed: number;
   },
   hasEarMuffs: boolean;
   health: number;
@@ -108,17 +116,25 @@ export type Enemy = EnemyData & {
   attack: (enemy: Enemy) => void;
 }
 
-export function blendAnimation(animations: Enemy['animation'], animationTimer: number) {
-  const from = animations.from[animationTimer % animations.from.length];
+export function blendAnimation(animations: Enemy['animation']) {
 
-  if (!animations.to) {
-    return from;
-  }
+  const tBottom = Math.floor(animations.animationT);
+  const tTop = Math.ceil(animations.animationT);
 
-  const to = animations.to[animationTimer % animations.to.length];
+  const roundOff = animations.animationT - tBottom;
+
+  const fromBottom = animations.from[tBottom % animations.from.length];
+  const fromTop = animations.from[tTop % animations.from.length];
+
+  const to = animations.to ?? animations.from;
+
+  const toBottom = to[tBottom % to.length];
+  const toTop = to[tTop % to.length];
 
   return [
-    from[0] * (1-animations.t) + to[0] * animations.t,
-    from[1] * (1-animations.t) + to[1] * animations.t,
+    (fromBottom[0] * (1-roundOff) + fromTop[0] * roundOff) * (1-animations.blendT) +
+      (toBottom[0] * (1-roundOff) + toTop[0] * roundOff) * animations.blendT,
+    (fromBottom[1] * (1-roundOff) + fromTop[1] * roundOff) * (1-animations.blendT) +
+      (toBottom[1] * (1-roundOff) + toTop[1] * roundOff) * animations.blendT,
   ]
 }
