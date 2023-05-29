@@ -303,7 +303,7 @@ export function battle():
     for (let e of level.battleData.enemies) {
       const enemyImage = context.physics.add
         .sprite(560, 220, e.name, 0)
-        .setScale(0.5);
+        .setScale(0.3);
 
       if (e.name !== 'silkeshäger') {
         enemyImage.flipX = true;
@@ -889,7 +889,7 @@ export function battle():
           };
 
           hasMoved = false;
-          enemies[turn.index].attack(enemies[0]);
+          enemies[turn.index].attack(enemies[turn.index]);
         }
       }
 
@@ -1069,8 +1069,6 @@ export function battle():
             default:
               target = 1;
           }
-
-          console.htmlLog(target)
 
           enemy.animation.animationSpeed = anim(enemy.animation.animationSpeed, target);
           enemy.animation.animationT += enemy.animation.animationSpeed;
