@@ -3,6 +3,7 @@ import { Boundary } from "./boundary";
 export type Player = {
   s: Phaser.GameObjects.Image;
   hyped: boolean;
+  health: number;
   xsp: number;
   ysp: number;
 }

@@ -16,7 +16,6 @@ const anim = (from: number, to: number) => {
 import {
   ENEMY_FRAME_CONFUSED,
   ENEMY_FRAME_GROOVY,
-  ENEMY_FRAME_NORMAL,
   ENEMY_FRAME_SLEEPY,
   Enemy,
   blendAnimation,
@@ -222,16 +221,9 @@ export function battle():
 
   function hurtPlayer(amount: number) {
     createExplosion(player.s.x, player.s.y - 10);
-    for (let i = 0; i < amount; i++) {
-      const heart = hp.pop();
+    player.health = Math.max(0, player.health-amount);
 
-      if (heart) {
-        createExplosion(heart.x, heart.y);
-        heart.destroy();
-      }
-    }
-
-    if (!hp.length) {
+    if (player.health <= 0) {
       turn = {
         type: "loose",
         text: "Ajdå\n[space] för att testa igen",
@@ -302,6 +294,7 @@ export function battle():
     player = {
       s: context.physics.add.image(230, 220, "adam").setScale(0.25),
       hyped: false,
+      health: 10,
       xsp: 0,
       ysp: 0,
     };
@@ -467,6 +460,7 @@ export function battle():
             enemies.forEach((e) => {
               e.status = undefined;
             });
+            player.hyped = false;
           } else {
             enemies[turn.index].attack(enemies[turn.index]);
           }
@@ -562,7 +556,7 @@ export function battle():
     playEffect.container.add(playEffect.sovningen);
 
     context.add.image(0, 0, "dialog").setOrigin(0, 0);
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < player.health; i++) {
       hp.push(context.add.image(20 + i * 30, 460, "heart"));
     }
 
@@ -619,6 +613,10 @@ export function battle():
       arrowKeysImage.alpha = hasMoved
         ? arrowKeysImage.alpha * 0.93
         : anim(arrowKeysImage.alpha, 1);
+
+      for (let i = 0; i < hp.length; i++) {
+        hp[i].setVisible(player.health > i)
+      }
 
       for (let i = opponentAttacks.length - 1; i >= 0; i--) {
         const attack = opponentAttacks[i];

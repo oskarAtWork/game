@@ -74,9 +74,6 @@ export const ezEnemy = (name: BirdNames, maxHealth: number, placement?: 'top' | 
     maxHealth,
     health: maxHealth,
     speed: 1,
-    animationT: 1,
-    animationSpeed: 1,
-    animationTargetSpeed: 1,
     x,
     y
   }
