@@ -5,6 +5,7 @@ import heartUrl from "../../assets/heart.png";
 import knifeUrl from "../../assets/knife.png";
 import zUrl from "../../assets/z.png";
 import biUrl from "../../assets/bi.png";
+import arrowKeysUrl from "../../assets/arrow_keys.png";
 import explosionUrl from "../../assets/explosion.png";
 import lightningUrl from "../../assets/lightning.png";
 
@@ -173,7 +174,6 @@ export function battle():
       s: context.add.sprite(x, y, "explosion").setScale(0.5),
     });
   }
-
   
   function createZ(x: number, y: number) {
     effects.push({
@@ -284,6 +284,8 @@ export function battle():
 
     context.add.image(0, 0, "background").setOrigin(0, 0);
 
+    context.add.image(230, 230, "arrowKeys").setAlpha(0.25);
+
     player = {
       s: context.physics.add.image(230, 220, "adam").setScale(0.25),
     };
@@ -339,7 +341,7 @@ export function battle():
           if (strength) {
             createLightning(player.s.x, player.s.y, false);
             hurtPlayer(3);
-          } else {
+          } else if (enemy.status?.type === "fearful") {
             createLightning(player.s.x + 120 + Math.random() * 10 , player.s.y - 120, true);
           }
         }
@@ -528,6 +530,7 @@ export function battle():
       this.load.image("heart", heartUrl);
       this.load.image("knife", knifeUrl);
       this.load.image("bi", biUrl);
+      this.load.image("arrowKeys", arrowKeysUrl);
 
       this.load.spritesheet("explosion", explosionUrl, {
         frameWidth: 100,
