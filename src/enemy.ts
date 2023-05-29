@@ -105,8 +105,8 @@ export type Enemy = EnemyData & {
     front: Phaser.GameObjects.Rectangle;
   }
   text: Phaser.GameObjects.Text;
+  attack: (enemy: Enemy) => void;
 }
-
 
 export function blendAnimation(animations: Enemy['animation'], animationTimer: number) {
   const from = animations.from[animationTimer % animations.from.length];

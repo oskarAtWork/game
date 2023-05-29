@@ -76,6 +76,7 @@ type Turn =
   | {
       type: "opponent";
       text: string;
+      index: number;
     }
   | {
       type: "win";
@@ -292,8 +293,61 @@ export function battle():
         .sprite(560, 220, e.name, 0)
         .setScale(0.5);
 
+      let attack: (enemy: Enemy) => void;
+
+      if (e.name === 'biatare') {
+        attack = (enemy) => {
+          turn.text = 'Bi-attack!!!';
+          let r = 11;
+          let spreadFactor = enemy.status?.type === 'fearful' ? 4 : 5;
+          for (let i = 180 - r * spreadFactor; i <= 180 + r * spreadFactor; i += r) {
+            createBi(enemy.s.x, enemy.s.y, i);
+          }
+        }
+      } else {
+        attack = (enemy) => {
+          let strength: number;
+
+          if (enemy.status?.type === "sleepy") {
+            if (enemy.status.strength === "much") {
+              turn.text = "Silkeshägern sov, ingen skada skedd";
+              strength = 0;
+            } else if (enemy.status.strength === "some") {
+              turn.text = "Silkeshägern gjorde en svag attack, 1hp skada";
+              strength = 1;
+            } else {
+              turn.text = "Silkeshägern framkallade en blixt, 3 hp skada";
+              strength = 3;
+            }
+          } else if (enemy.status?.type === "fearful") {
+            if (enemy.status.strength === "much") {
+              turn.text = "Silkeshägern skakade så mycket att hen missade";
+              strength = 0;
+            } else if (enemy.status.strength === "some" && Math.random() < 0.5) {
+              turn.text =
+                "Silkeshägern skakade så mycket att hen missade";
+              strength = 0;
+            } else {
+              turn.text = "Rädd fågel, 3 hp skada";
+              strength = 3;
+            }
+          } else {
+            turn.text = "Arg fågel, 3 hp skada";
+            strength = 3;
+          }
+
+          if (strength) {
+            createLightning(player.s.x, player.s.y, false);
+            hurtPlayer(3);
+          } else {
+            createLightning(player.s.x + 120 + Math.random() * 10 , player.s.y - 120, true);
+          }
+        }
+      }
+
       enemies.push({
         ...e,
+        attack,
         s: enemyImage,
         text: context.add.text(650, 10, "", {
           fontSize: "20px",
@@ -370,8 +424,14 @@ export function battle():
 
       if (turn.type === "opponent") {
         if (ev.key === " ") {
-          turn = TURN_SELECT(level.battleData);
-          enemies.forEach((e) => {e.status = undefined})
+          turn.index += 1;
+
+          if (turn.index >= enemies.length) {
+            turn = TURN_SELECT(level.battleData);
+            enemies.forEach((e) => {e.status = undefined})
+          } else {
+            enemies[turn.index].attack(enemies[turn.index]);
+          }
         }
         return;
       }
@@ -626,10 +686,8 @@ export function battle():
             knife.s.y < 0 ||
             knife.s.y > 600;
 
-          console.log(!!collides, outside)
-
           if (collides) {
-            collides.health -= 1;
+            collides.health -= collides.status?.type === 'fearful' ? 2 : 1;
             createExplosion(knife.s.x, knife.s.y);
           }
 
@@ -650,7 +708,7 @@ export function battle():
           e.status?.type === "sleepy" ? ENEMY_FRAME_SLEEPY : ENEMY_FRAME_NORMAL
         );
 
-        if (animationTimer % 60 === i * (60 / enemies.length) && e.status?.type === 'sleepy' && e.status.strength === 'much') {
+        if (animationTimer % 30 === i * (30 / enemies.length) && e.status?.type === 'sleepy' && e.status.strength === 'much') {
           createZ(e.s.x, e.s.y);
         }
       });
@@ -669,55 +727,11 @@ export function battle():
         if (getT() > knifeSongEnd) {
           turn = {
             type: "opponent",
-            text: "fågeln: Caw caaw",
+            text: '...',
+            index: 0,
           };
 
-          for (let enemy of enemies) {
-            if (enemy.name === "biatare") {
-              let r = 11;
-              let spreadFactor = enemy.status?.type === 'fearful' ? 4 : 5;
-              for (let i = 180 - r * spreadFactor; i <= 180 + r * spreadFactor; i += r) {
-                createBi(enemy.s.x, enemy.s.y, i);
-              }
-            } else if (enemy.name === 'silkeshäger') {
-              let strength: number;
-
-              if (enemy.status?.type === "sleepy") {
-                if (enemy.status.strength === "much") {
-                  turn.text = "Silkeshägern sov, ingen skada skedd";
-                  strength = 0;
-                } else if (enemy.status.strength === "some") {
-                  turn.text = "Silkeshägern gjorde en svag attack, 1hp skada";
-                  strength = 1;
-                } else {
-                  turn.text = "Silkeshägern framkallade en blixt, 3 hp skada";
-                  strength = 3;
-                }
-              } else if (enemy.status?.type === "fearful") {
-                if (enemy.status.strength === "much") {
-                  turn.text = "Silkeshägern skakade så mycket att hen missade";
-                  strength = 0;
-                } else if (enemy.status.strength === "some" && Math.random() < 0.5) {
-                  turn.text =
-                    "Silkeshägern skakade så mycket att hen missade";
-                  strength = 0;
-                } else {
-                  turn.text = "Rädd fågel, 3 hp skada";
-                  strength = 3;
-                }
-              } else {
-                turn.text = "Arg fågel, 3 hp skada";
-                strength = 3;
-              }
-
-              if (strength) {
-                createLightning(player.s.x, player.s.y, false);
-                hurtPlayer(3);
-              } else {
-                createLightning(player.s.x + 120 + Math.random() * 10 , player.s.y - 120, true);
-              }
-            }
-          }
+          enemies[0].attack(enemies[0]);
         }
       }
 
@@ -787,10 +801,7 @@ export function battle():
             } else {
               text = "Ingen effekt";
               enemies.forEach((enemy) => {
-                enemy.status = {
-                  type: "sleepy",
-                  strength: "none",
-                };
+                enemy.status = undefined;
               });
             }
           } else {
@@ -826,8 +837,7 @@ export function battle():
           }
 
           const scared =
-            enemy.status?.type === "fearful" &&
-            enemy.status?.strength !== "none";
+            enemy.status?.type === "fearful";
 
           enemy.boundary = animBoundary(
             enemy.boundary,
@@ -895,7 +905,9 @@ export function battle():
 
           enemy.s.x = enemy.x + dx;
           enemy.s.y = enemy.y + dy;
+        }
 
+        enemies.forEach((enemy) => {
           const ex = enemy.s.x - 50;
           const ey = enemy.s.y - 50;
 
@@ -904,9 +916,9 @@ export function battle():
           enemy.healthBar.front.width =
             enemy.healthBar.back.width * (enemy.health / enemy.maxHealth);
 
-          enemy.healthBar.back.setVisible(turn.type !== "win");
-          enemy.healthBar.front.setVisible(turn.type !== "win");
-        }
+          enemy.healthBar.back.setVisible(turn.type !== "win" && enemy.health > 0);
+          enemy.healthBar.front.setVisible(turn.type !== "win" && enemy.health > 0);
+        })
       }
 
       if (restart) {
