@@ -2,7 +2,7 @@ import { Boundary, centerX } from "./boundary";
 import { BirdNames } from "./dialog-person";
 import {Animation, animation_long_floaty} from './animations';
 
-export type EffectStrength = 'much' | 'some' | 'none';
+export type EffectStrength = 'much' | 'some';
 
 export const ENEMY_FRAME_NORMAL = 0;
 export const ENEMY_FRAME_SLEEPY = 1;
@@ -13,6 +13,20 @@ export const normalBoundary = (): Boundary => ({
   left: 420,
   right: 710,
   top: 70,
+  bottom: 375,
+})
+
+export const upperBoundary = (): Boundary => ({
+  left: 420,
+  right: 710,
+  top: 70,
+  bottom: 200,
+})
+
+export const lowerBoundary = (): Boundary => ({
+  left: 420,
+  right: 710,
+  top: 200,
   bottom: 375,
 })
 
@@ -30,14 +44,25 @@ export const braveBoundary = (): Boundary => ({
   bottom: 375,
 })
 
-export const ezEnemy = (name: BirdNames, maxHealth: number): EnemyData => {
-  const nb = normalBoundary()
+export const ezEnemy = (name: BirdNames, maxHealth: number, placement?: 'top' | 'bottom'): EnemyData => {
+  let nb: Boundary;
+  
+  if (placement === 'bottom') {
+    nb = lowerBoundary();
+  } else if (placement === 'top') {
+    nb = upperBoundary();
+  } else {
+    nb = normalBoundary();
+  }
+
   const x = centerX(nb)
   const y = (nb.left + nb.right) / 2
+
   return {
     status: undefined,
     name,
     boundary: nb,
+    defaultBoundary: nb,
     animation: {
       from: animation_long_floaty,
       to: undefined,
@@ -59,6 +84,7 @@ export type EnemyData = {
   } | undefined;
   name: BirdNames;
   boundary: Boundary;
+  defaultBoundary: Boundary;
   animation: {
     from: Animation,
     to: Animation | undefined;

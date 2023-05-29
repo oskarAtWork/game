@@ -3,6 +3,7 @@ import backgroundUrl from "../../assets/tile-layout.png";
 import gameOverUrl from "../../assets/game_over.png";
 import heartUrl from "../../assets/heart.png";
 import knifeUrl from "../../assets/knife.png";
+import zUrl from "../../assets/z.png";
 import biUrl from "../../assets/bi.png";
 import explosionUrl from "../../assets/explosion.png";
 import lightningUrl from "../../assets/lightning.png";
@@ -16,7 +17,6 @@ import {
   ENEMY_FRAME_SLEEPY,
   Enemy,
   blendAnimation,
-  normalBoundary,
   scaredBoundary,
 } from "../enemy";
 import { skaningen, sovningen } from "../songs/songs";
@@ -36,7 +36,8 @@ import { preloadSongs } from "../preload/preload-song";
 import { Player } from "../player";
 import { animBoundary, centerX, centerY } from "../boundary";
 
-const knifeSongTimings = [2949, 3882, 4883, 5785, 6837, 7571, 8597];
+
+const knifeSongTimings = [2933,3831,4768,5744,6744,7660,8614];
 const knifeSongEnd = 9000;
 
 const howClose = (knifeT: number) => {
@@ -149,10 +150,12 @@ export function battle():
   };
 
   let effects: {
-    type: "explosion" | "lightning";
+    type: "explosion" | "lightning" | "lightning-harmless" | "z";
     start: number;
     length: number;
     frames: number;
+    sx?: number;
+    sy?: number;
     s: Phaser.GameObjects.Sprite;
   }[];
 
@@ -167,6 +170,19 @@ export function battle():
       length: 30,
       frames: 10,
       s: context.add.sprite(x, y, "explosion").setScale(0.5),
+    });
+  }
+
+  
+  function createZ(x: number, y: number) {
+    effects.push({
+      type: "z",
+      start: animationTimer,
+      length: 30,
+      frames: 10,
+      sx: 0.5,
+      sy: -1,
+      s: context.add.sprite(x, y, "z").setScale(0.5),
     });
   }
 
@@ -210,7 +226,7 @@ export function battle():
     }
   }
 
-  function createLightning(x: number, y: number) {
+  function createLightning(x: number, y: number, harmless: boolean) {
     for (let i = 0; i < 10; i++) {
       const yy = y - i * 100;
 
@@ -219,7 +235,7 @@ export function battle():
       }
 
       effects.push({
-        type: "lightning",
+        type: harmless ? "lightning-harmless" : 'lightning',
         start: animationTimer,
         length: 50,
         frames: 9,
@@ -355,6 +371,7 @@ export function battle():
       if (turn.type === "opponent") {
         if (ev.key === " ") {
           turn = TURN_SELECT(level.battleData);
+          enemies.forEach((e) => {e.status = undefined})
         }
         return;
       }
@@ -457,6 +474,8 @@ export function battle():
         frameHeight: 100,
       });
 
+      this.load.image('z', zUrl);
+
       this.load.spritesheet("lightning", lightningUrl, {
         frameWidth: 50,
         frameHeight: 100,
@@ -538,18 +557,21 @@ export function battle():
       // effects
       {
         const doNotDestroy: typeof effects = [];
-        for (const explosion of effects) {
+        for (const effect of effects) {
           const i = Math.floor(
-            explosion.frames *
-              (animationTimer - explosion.start) *
-              (1 / explosion.length)
+            effect.frames *
+              (animationTimer - effect.start) *
+              (1 / effect.length)
           );
 
-          if (i < explosion.frames) {
-            explosion.s.setFrame(i);
-            doNotDestroy.push(explosion);
+          effect.s.x += effect.sx ?? 0;
+          effect.s.y += effect.sy ?? 0;
+
+          if (i < effect.frames) {
+            effect.s.setFrame(i);
+            doNotDestroy.push(effect);
           } else {
-            explosion.s.destroy();
+            effect.s.destroy();
           }
         }
 
@@ -595,7 +617,7 @@ export function battle():
             Math.sin(Phaser.Math.DegToRad(knife.s.angle)) * knife.speed;
 
           const collides = enemies.find((e) =>
-            this.physics.collide(knife.s, e.s)
+            e.health > 0 && this.physics.collide(knife.s, e.s)
           );
 
           const outside =
@@ -623,10 +645,14 @@ export function battle():
         }
       }
 
-      enemies.forEach((e) => {
+      enemies.forEach((e, i) => {
         e.s.setFrame(
           e.status?.type === "sleepy" ? ENEMY_FRAME_SLEEPY : ENEMY_FRAME_NORMAL
         );
+
+        if (animationTimer % 60 === i * (60 / enemies.length) && e.status?.type === 'sleepy' && e.status.strength === 'much') {
+          createZ(e.s.x, e.s.y);
+        }
       });
 
       if (turn.type === "shoot") {
@@ -649,31 +675,31 @@ export function battle():
           for (let enemy of enemies) {
             if (enemy.name === "biatare") {
               let r = 11;
-              for (let i = 180 - r * 5; i <= 180 + r * 5; i += r) {
+              let spreadFactor = enemy.status?.type === 'fearful' ? 4 : 5;
+              for (let i = 180 - r * spreadFactor; i <= 180 + r * spreadFactor; i += r) {
                 createBi(enemy.s.x, enemy.s.y, i);
               }
-            } else {
+            } else if (enemy.name === 'silkeshäger') {
               let strength: number;
 
               if (enemy.status?.type === "sleepy") {
                 if (enemy.status.strength === "much") {
-                  turn.text = "Fågeln sov, ingen attack";
+                  turn.text = "Silkeshägern sov, ingen skada skedd";
                   strength = 0;
                 } else if (enemy.status.strength === "some") {
-                  turn.text = "Fågeln gjorde en svag attack (1hp)";
+                  turn.text = "Silkeshägern gjorde en svag attack, 1hp skada";
                   strength = 1;
                 } else {
-                  turn.text = "Arg fågel, 3 hp skada";
+                  turn.text = "Silkeshägern framkallade en blixt, 3 hp skada";
                   strength = 3;
                 }
               } else if (enemy.status?.type === "fearful") {
-                if (enemy.status.strength === "much" && Math.random() < 0.5) {
-                  turn.text = "Rädd fågel, skakade så mycket att hen missade";
+                if (enemy.status.strength === "much") {
+                  turn.text = "Silkeshägern skakade så mycket att hen missade";
                   strength = 0;
-                }
-                if (enemy.status.strength === "some" && Math.random() < 0.25) {
+                } else if (enemy.status.strength === "some" && Math.random() < 0.5) {
                   turn.text =
-                    "Rätt rädd fågel, skakade så mycket att hen missade";
+                    "Silkeshägern skakade så mycket att hen missade";
                   strength = 0;
                 } else {
                   turn.text = "Rädd fågel, 3 hp skada";
@@ -685,8 +711,10 @@ export function battle():
               }
 
               if (strength) {
-                createLightning(player.s.x, player.s.y);
+                createLightning(player.s.x, player.s.y, false);
                 hurtPlayer(3);
+              } else {
+                createLightning(player.s.x + 120 + Math.random() * 10 , player.s.y - 120, true);
               }
             }
           }
@@ -790,14 +818,20 @@ export function battle():
           text: "Fågeln dog",
         };
       } else {
-        for (let enemy of enemies) {
+        for (let i = 0; i < enemies.length; i++) {
+          const enemy = enemies[i];
+
+          if (enemy.health <= 0) {
+            continue;
+          }
+
           const scared =
             enemy.status?.type === "fearful" &&
             enemy.status?.strength !== "none";
 
           enemy.boundary = animBoundary(
             enemy.boundary,
-            scared ? scaredBoundary() : normalBoundary()
+            scared ? scaredBoundary() : enemy.defaultBoundary
           );
 
           const animationTarget = scared
@@ -843,7 +877,7 @@ export function battle():
             enemy.speed = anim(enemy.speed, 1);
           }
 
-          const [offX, offY] = blendAnimation(enemy.animation, animationTimer);
+          const [offX, offY] = blendAnimation(enemy.animation, animationTimer + 100 * i);
 
           const dx =
             offX *

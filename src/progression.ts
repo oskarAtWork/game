@@ -66,6 +66,13 @@ export const levels: Level[] = [
       strings: ['G', 'D'],
     }
   },
+  {
+    sceneKey: 'BattleScene',
+    battleData: {
+      enemies: [ezEnemy('biatare', 14, "top"), ezEnemy('silkeshäger', 14, "bottom")],
+      strings: ['G', 'D'],
+    }
+  },
 ]
 
 export const getCurrentLevel = () => levels[currentLevel];
