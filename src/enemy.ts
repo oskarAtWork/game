@@ -44,17 +44,7 @@ export const braveBoundary = (): Boundary => ({
   bottom: 375,
 })
 
-export const ezEnemy = (name: BirdNames, maxHealth: number, placement?: 'top' | 'bottom'): EnemyData => {
-  let nb: Boundary;
-  
-  if (placement === 'bottom') {
-    nb = lowerBoundary();
-  } else if (placement === 'top') {
-    nb = upperBoundary();
-  } else {
-    nb = normalBoundary();
-  }
-
+export const ezEnemy = (name: BirdNames, maxHealth: number, nb = normalBoundary()): EnemyData => {
   const x = centerX(nb)
   const y = (nb.left + nb.right) / 2
 

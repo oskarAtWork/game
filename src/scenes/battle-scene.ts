@@ -295,6 +295,7 @@ export function battle():
       s: context.physics.add.image(230, 220, "adam").setScale(0.25),
       hyped: false,
       health: 10,
+      maxHealth: 10,
       xsp: 0,
       ysp: 0,
     };
@@ -303,6 +304,10 @@ export function battle():
       const enemyImage = context.physics.add
         .sprite(560, 220, e.name, 0)
         .setScale(0.5);
+
+      if (e.name !== 'silkeshäger') {
+        enemyImage.flipX = true;
+      }
 
       let attack: (enemy: Enemy) => void;
 
@@ -321,7 +326,7 @@ export function battle():
             }
           }, 1000);
         };
-      } else {
+      } else if (e.name === 'silkeshäger') {
         attack = (enemy) => {
           let strength: number;
 
@@ -371,6 +376,17 @@ export function battle():
             );
           }
         };
+      } else {
+        //taiga
+        attack = (enemy) => {
+          if (enemy.status?.type === 'confused') {
+            turn.text = 'Ge inte upp... Oj då!!, (+2 hp till dig)';
+            player.health = Math.min(player.maxHealth, player.health+2);
+          } else {
+            turn.text = 'Ge inte upp!!! (+2 hp till alla fåglar)';
+            enemies.forEach((e) => {e.health = Math.min(e.maxHealth, e.health + 2)});
+          }
+        }
       }
 
       enemies.push({
@@ -381,6 +397,10 @@ export function battle():
           fontSize: "20px",
           fontFamily: "Helvetica",
         }),
+        animation: {
+          ...e.animation,
+          animationT: 60 * enemies.length,
+        },
         healthBar: {
           back: context.add
             .rectangle(0, 0, 100, 10)

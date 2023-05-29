@@ -4,6 +4,7 @@ export type Player = {
   s: Phaser.GameObjects.Image;
   hyped: boolean;
   health: number;
+  maxHealth: number;
   xsp: number;
   ysp: number;
 }

@@ -5,8 +5,8 @@ import adamPlay3 from '../assets/adam-play-3.png';
 import adamPlay4 from '../assets/adam-play-4.png';
 import mollyUrl from '../assets/molly.png';
 import oskarUrl from '../assets/oskar.png';
-import biatareUrl from '../assets/biatare_normal.png';
-import tajgablastjartUrl from '../assets/tajgablastjart_normal.png';
+import biatareUrl from '../assets/biatare_sheet.png';
+import tajgaUrl from '../assets/tajgablastjart_sheet.png';
 import silkäsHägerUrl from '../assets/silkeshager_sheet.png';
 import klaraUrl from '../assets/klara.png';
 import { EnterAction } from './dialogue_script/scene-utils';
@@ -27,9 +27,9 @@ export function preloadPeople(scene: Phaser.Scene) {
   scene.load.image('molly', mollyUrl);
   scene.load.image('oskar', oskarUrl);
   
-  scene.load.spritesheet('silkeshäger', silkäsHägerUrl, { frameWidth: 100, frameHeight: 100});
-  scene.load.image('tajgablåstjärt', tajgablastjartUrl);
-  scene.load.image('biatare', biatareUrl);
+  scene.load.spritesheet('silkeshäger', silkäsHägerUrl, { frameWidth: 200, frameHeight: 200});
+  scene.load.spritesheet('tajga', tajgaUrl, { frameWidth: 200, frameHeight: 200});
+  scene.load.spritesheet('biatare', biatareUrl, { frameWidth: 200, frameHeight: 200});
   scene.load.image('klara', klaraUrl);
 
   scene.load.image('adam-play-1', adamPlay1);
@@ -38,7 +38,7 @@ export function preloadPeople(scene: Phaser.Scene) {
   scene.load.image('adam-play-4', adamPlay4);
 }
 
-export type BirdNames = 'silkeshäger' | 'biatare' | 'tajgablåstjärt';
+export type BirdNames = 'silkeshäger' | 'biatare' | 'tajga';
 export type Names = 'oskar' | 'molly' | 'adam' | 'klara' | BirdNames;
 
 export const xPosition = (name: Names): number => {
@@ -57,7 +57,7 @@ export const xPosition = (name: Names): number => {
 
     case 'silkeshäger':
     case 'biatare':
-    case 'tajgablåstjärt':
+    case 'tajga':
       return 500;
   
     default:
