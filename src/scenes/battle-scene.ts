@@ -14,12 +14,10 @@ const anim = (from: number, to: number) => {
 };
 
 import {
-  ENEMY_FRAME_CONFUSED,
-  ENEMY_FRAME_GROOVY,
-  ENEMY_FRAME_SLEEPY,
   Enemy,
   blendAnimation,
   braveBoundary,
+  getFrame,
   scaredBoundary,
 } from "../enemy";
 import { skaningen, sovningen } from "../songs/songs";
@@ -42,6 +40,7 @@ import {
 import { preloadSongs } from "../preload/preload-song";
 import { Player, playerBoundary } from "../player";
 import { animBoundary, centerX, centerY } from "../boundary";
+import { exhaust } from "../helper";
 
 const knifeSongTimings = [2933, 3831, 4768, 5744, 6744, 7660, 8614];
 const knifeSongEnd = 9000;
@@ -124,6 +123,7 @@ export function battle():
     container: Phaser.GameObjects.Container;
     skaningen: Phaser.GameObjects.Image;
     sovningen: Phaser.GameObjects.Image;
+    enemies: Phaser.GameObjects.Image[];
   };
 
   let turn: Turn;
@@ -221,7 +221,7 @@ export function battle():
 
   function hurtPlayer(amount: number) {
     createExplosion(player.s.x, player.s.y - 10);
-    player.health = Math.max(0, player.health-amount);
+    player.health = Math.max(0, player.health - amount);
 
     if (player.health <= 0) {
       turn = {
@@ -305,7 +305,7 @@ export function battle():
         .sprite(560, 220, e.name, 0)
         .setScale(0.3);
 
-      if (e.name !== 'silkeshäger') {
+      if (e.name !== "silkeshäger") {
         enemyImage.flipX = true;
       }
 
@@ -322,71 +322,52 @@ export function battle():
               i <= 180 + r * spreadFactor;
               i += r
             ) {
-              createBi(enemy.s.x - 100, enemy.s.y, i, enemy.status?.type === 'confused' ? (i-180) / 5 : 0);
+              createBi(
+                enemy.s.x - 100,
+                enemy.s.y,
+                i,
+                enemy.status?.type === "confused" ? (i - 180) / 5 : 0
+              );
             }
           }, 1000);
         };
-      } else if (e.name === 'silkeshäger') {
+      } else if (e.name === "silkeshäger") {
         attack = (enemy) => {
-          let strength: number;
 
           if (enemy.status?.type === "confused") {
             turn.text = "Silkeshägern är förvirrad och träffar sig själv!";
             createLightning(enemy.s.x, enemy.s.y, true);
             enemy.health -= 3;
-            strength = 0;
           } else if (enemy.status?.type === "sleepy") {
-            if (enemy.status.strength === "much") {
-              turn.text = "Silkeshägern sov, ingen skada skedd";
-              strength = 0;
-            } else if (enemy.status.strength === "some") {
-              turn.text = "Silkeshägern gjorde en svag attack, 1hp skada";
-              strength = 1;
-            } else {
-              turn.text = "Silkeshägern framkallade en blixt, 3 hp skada";
-              strength = 3;
-            }
+            turn.text = "Silkeshägern sov, ingen skada skedd";
           } else if (enemy.status?.type === "fearful") {
-            if (enemy.status.strength === "much") {
-              turn.text = "Silkeshägern skakade så mycket att hen missade";
-              strength = 0;
-            } else if (
-              enemy.status.strength === "some" &&
-              Math.random() < 0.5
-            ) {
-              turn.text = "Silkeshägern skakade så mycket att hen missade";
-              strength = 0;
-            } else {
-              turn.text = "Rädd fågel, 3 hp skada";
-              strength = 3;
-            }
-          } else {
-            turn.text = "Arg fågel, 3 hp skada";
-            strength = 3;
-          }
-
-          if (strength) {
-            createLightning(player.s.x, player.s.y - 29, false);
-            hurtPlayer(3);
-          } else if (enemy.status?.type === "fearful") {
+            turn.text = "Silkeshägern skakade så mycket att hen missade";
             createLightning(
               player.s.x + 120 + Math.random() * 10,
               player.s.y - 120,
               true
             );
+          } else {
+            const amount = 3;
+            turn.text = `Silkeshägern framkallade en blixt, ${amount} hp skada`;
+            createLightning(player.s.x, player.s.y - 29, false);
+            hurtPlayer(amount);
           }
         };
       } else {
         //taiga
         attack = (enemy) => {
-          if (enemy.status?.type === 'confused') {
-            turn.text = 'Ge inte upp... Oj då!!, (+2 hp till dig)';
-            player.health = Math.min(player.maxHealth, player.health+2);
+          const amount = 3;
+          if (enemy.status?.type === "confused") {
+            turn.text = `Ge inte upp... Oj då!!, (+${amount} hp till dig)`;
+            player.health = Math.min(player.maxHealth, player.health + amount);
           } else {
-            turn.text = 'Ge inte upp!!! (+2 hp till alla fåglar)';
-            enemies.forEach((e) => {e.health = Math.min(e.maxHealth, e.health + 2)});
+            turn.text = `Ge inte upp!!! (+${amount} hp till alla fåglar)`;
+            enemies.forEach((e) => {
+              e.health = Math.min(e.maxHealth, e.health + amount);
+            });
           }
-        }
+        };
       }
 
       enemies.push({
@@ -510,7 +491,6 @@ export function battle():
             .forEach((e) => {
               e.status = {
                 type: "hyped",
-                strength: "much",
               };
             });
           turn = {
@@ -526,7 +506,6 @@ export function battle():
             .forEach((e) => {
               e.status = {
                 type: "confused",
-                strength: "much",
               };
             });
           turn = {
@@ -571,9 +550,19 @@ export function battle():
       container: context.add.container(0, 0).setAlpha(0),
       skaningen: context.add.image(400, 400, "adam-play-1"),
       sovningen: context.add.image(400, 400, "adam-play-3"),
+      enemies: enemies.map((e, i) => {
+        const right = e.name === "silkeshäger";
+        return context.add
+          .sprite(right ? 760 : 70, 250 + (right ? 0 : i * 100), e.name)
+          .setScale(2)
+          .setAngle(right ? 20 : -20);
+      }),
     };
     playEffect.container.add(playEffect.skaningen);
     playEffect.container.add(playEffect.sovningen);
+    playEffect.enemies.forEach((e) => {
+      playEffect.container.add(e);
+    });
 
     context.add.image(0, 0, "dialog").setOrigin(0, 0);
     for (let i = 0; i < player.health; i++) {
@@ -635,7 +624,7 @@ export function battle():
         : anim(arrowKeysImage.alpha, 1);
 
       for (let i = 0; i < hp.length; i++) {
-        hp[i].setVisible(player.health > i)
+        hp[i].setVisible(player.health > i);
       }
 
       for (let i = opponentAttacks.length - 1; i >= 0; i--) {
@@ -653,7 +642,9 @@ export function battle():
           Math.sin(Phaser.Math.DegToRad(attack.s.angle)) * attack.speed;
 
         const collides = this.physics.collide(attack.s, player.s);
-        const enemyCollision = enemies.filter((x) => x.health > 0).find((e) => this.physics.collide(attack.s, e.s));
+        const enemyCollision = enemies
+          .filter((x) => x.health > 0)
+          .find((e) => this.physics.collide(attack.s, e.s));
         const outside =
           attack.s.x < 0 ||
           attack.s.y > 800 ||
@@ -691,6 +682,17 @@ export function battle():
         playEffect.container.setAlpha(
           anim(playEffect.container.alpha, 0.1 + (0.9 * d) / p)
         );
+
+        const score = scoreSong(playedNotes, song);
+
+        playEffect.enemies.forEach((e, i) => {
+          const enemy = enemies[i];
+          if (song && score > enemy.resistances[song.effect]) {
+            e.setFrame(song.effect);
+          } else {
+            e.setFrame(getFrame(song?.effect));
+          }
+        });
       }
 
       if (!effects.some((x) => x.type === "lightning")) {
@@ -843,28 +845,11 @@ export function battle():
       }
 
       enemies.forEach((e, i) => {
-        let frame: number;
-
-        switch (e.status?.type) {
-          case "sleepy":
-            frame = ENEMY_FRAME_SLEEPY;
-            break;
-          case "confused":
-            frame = ENEMY_FRAME_CONFUSED;
-            break;
-          case "hyped":
-            frame = ENEMY_FRAME_GROOVY;
-            break;
-          default:
-            frame = 0;
-        }
-
-        e.s.setFrame(frame);
+        e.s.setFrame(getFrame(e.status?.type));
 
         if (
           animationTimer % 30 === i * (30 / enemies.length) &&
-          e.status?.type === "sleepy" &&
-          e.status.strength === "much"
+          e.status?.type === "sleepy" 
         ) {
           createZ(e.s.x, e.s.y);
         }
@@ -913,60 +898,34 @@ export function battle():
           line.s.setVisible(false);
           const score = scoreSong(playedNotes, song);
 
-          let text: string;
+          let text = "";
 
-          if (song.name === "skaningen") {
-            if (score > 0.7) {
-              text = "Väldigt skrämmande";
-              enemies.forEach((enemy) => {
-                enemy.status = {
-                  type: "fearful",
-                  strength: "much",
-                };
-              });
-            } else if (score > 0.3) {
-              text = "Lite skrämmande ändå";
-              enemies.forEach((enemy) => {
-                enemy.status = {
-                  type: "fearful",
-                  strength: "some",
-                };
-              });
-            } else {
-              text = "Ingen effekt";
-              enemies.forEach((enemy) => {
-                enemy.status = undefined;
-              });
-            }
-          } else if (song.name === "sovningen") {
-            if (score > 0.7) {
-              text = "Väldigt sömnigt";
+          for (let enemy of enemies) {
+            if (score > enemy.resistances[song.effect]) {
+              enemy.status = {
+                type: song.effect,
+              }
 
-              enemies.forEach((enemy) => {
-                enemy.status = {
-                  type: "sleepy",
-                  strength: "much",
-                };
-              });
-            } else if (score > 0.3) {
-              text = "Lite trött verkar fågeln bli";
-              enemies.forEach((enemy) => {
-                enemy.status = {
-                  type: "sleepy",
-                  strength: "some",
-                };
-              });
-            } else {
-              text = "Ingen effekt";
-              enemies.forEach((enemy) => {
-                enemy.status = undefined;
-              });
+              let adj = '';
+
+              if (song.effect === 'confused') {
+                adj = 'förvirrad'
+              } else if (song.effect === 'fearful') {
+                adj = 'rädd';
+              } else if (song.effect === 'hyped') {
+                adj = 'taggad';
+              } else if (song.effect === 'sleepy') {
+                adj = 'trött';
+              } else {
+                exhaust(song.effect);
+                adj = '???' + song.effect;
+              }
+
+              text += `${enemy.name} blev väldigt ${adj}\n`
             }
-          } else {
-            throw Error("Unknown song");
           }
 
-          turn.text = text + "\n[tryck space]";
+          turn.text = text + "[tryck space]";
 
           clearSong(song);
           clearPlayedNotes(playedNotes);
@@ -1059,38 +1018,36 @@ export function battle():
 
           let target: number;
 
-          switch(enemy.status?.type) {
-            case 'confused':
+          switch (enemy.status?.type) {
+            case "confused":
               target = 0.25;
               break;
-            case 'sleepy':
+            case "sleepy":
               target = 0.1;
               break;
             default:
               target = 1;
           }
 
-          enemy.animation.animationSpeed = anim(enemy.animation.animationSpeed, target);
+          enemy.animation.animationSpeed = anim(
+            enemy.animation.animationSpeed,
+            target
+          );
           enemy.animation.animationT += enemy.animation.animationSpeed;
 
           if (
-            enemy.status?.type === "sleepy" &&
-            enemy.status.strength === "some"
+            enemy.status?.type === "confused"
           ) {
             enemy.speed = anim(enemy.speed, 0.25);
-          }
-          if (
-            enemy.status?.type === "sleepy" &&
-            enemy.status.strength === "much"
+          } else if (
+            enemy.status?.type === "sleepy"
           ) {
             enemy.speed = anim(enemy.speed, 0);
           } else {
             enemy.speed = anim(enemy.speed, 1);
           }
 
-          const [offX, offY] = blendAnimation(
-            enemy.animation,
-          );
+          const [offX, offY] = blendAnimation(enemy.animation);
 
           const dx =
             offX *
@@ -1112,9 +1069,6 @@ export function battle():
       }
 
       if (restart) {
-        this.children.removeAll();
-        this.sound.stopAll();
-        create(this);
         this.scene.restart();
       }
     },

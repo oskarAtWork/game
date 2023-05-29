@@ -1,3 +1,4 @@
+import { EffectType } from "../enemy";
 import { Sheet } from "../sheet";
 
 export type ViolinString = 'G' | 'D' | 'A' | 'E';
@@ -12,6 +13,7 @@ type InternalSong = {
   startsAt: number;
   notes: string;
   timings: number[];
+  effect: EffectType;
 };
 
 export type Song = {
@@ -20,6 +22,7 @@ export type Song = {
   startsAt: number;
   notes: Phaser.GameObjects.Image[];
   timings: number[];
+  effect: EffectType;
 }
 
 export function createSong(internalSong: InternalSong, scene: Phaser.Scene, sheet: Sheet): Song {
@@ -47,6 +50,7 @@ export function createSong(internalSong: InternalSong, scene: Phaser.Scene, shee
 
   return {
     name: internalSong.name,
+    effect: internalSong.effect,
     startsAt: internalSong.startsAt,
     endsAt: internalSong.endsAt,
     notes: combined,

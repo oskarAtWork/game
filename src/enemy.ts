@@ -2,7 +2,7 @@ import { Boundary, centerX } from "./boundary";
 import { BirdNames } from "./dialog-person";
 import {Animation, animation_long_floaty} from './animations';
 
-export type EffectStrength = 'much' | 'some';
+export type EffectType = 'sleepy' | 'fearful' | 'hyped' | 'confused';
 
 export const ENEMY_FRAME_NORMAL = 0;
 export const ENEMY_FRAME_SLEEPY = 1;
@@ -64,6 +64,12 @@ export const ezEnemy = (name: BirdNames, maxHealth: number, nb = normalBoundary(
     maxHealth,
     health: maxHealth,
     speed: 1,
+    resistances: {
+      fearful: 0.5,
+      sleepy: 0.5,
+      hyped: 0.5,
+      confused: 0.5,
+    },
     x,
     y
   }
@@ -71,8 +77,7 @@ export const ezEnemy = (name: BirdNames, maxHealth: number, nb = normalBoundary(
 
 export type EnemyData = {
   status: {
-    strength: EffectStrength;
-    type: 'sleepy' | 'fearful' | 'hyped' | 'confused';
+    type: EffectType;
   } | undefined;
   name: BirdNames;
   boundary: Boundary;
@@ -81,7 +86,6 @@ export type EnemyData = {
     from: Animation,
     to: Animation | undefined;
     blendT: number,
-
     animationT: number;
     animationSpeed: number;
   },
@@ -91,6 +95,7 @@ export type EnemyData = {
   speed: number;
   x: number;
   y: number;
+  resistances: Record<EffectType, number>;
 }
 
 export type Enemy = EnemyData & {
@@ -124,4 +129,17 @@ export function blendAnimation(animations: Enemy['animation']) {
     (fromBottom[1] * (1-roundOff) + fromTop[1] * roundOff) * (1-animations.blendT) +
       (toBottom[1] * (1-roundOff) + toTop[1] * roundOff) * animations.blendT,
   ]
+}
+
+export function getFrame(status: EffectType | undefined) {
+  switch (status) {
+    case "sleepy":
+      return ENEMY_FRAME_SLEEPY;
+    case "confused":
+      return ENEMY_FRAME_CONFUSED;
+    case "hyped":
+      return ENEMY_FRAME_GROOVY;
+  }
+
+  return ENEMY_FRAME_NORMAL;
 }
