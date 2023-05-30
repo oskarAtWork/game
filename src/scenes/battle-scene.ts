@@ -106,6 +106,12 @@ export function battle():
   | Phaser.Types.Scenes.SettingsConfig
   | Phaser.Types.Scenes.CreateSceneFromObjectConfig {
   let enemies: Enemy[];
+  let attacks: {
+    s: Phaser.GameObjects.Image;
+    destroy: boolean;
+    speed: number;
+    hyped: boolean,
+  }[];
   let sheet: Sheet;
   let line: {
     s: Phaser.GameObjects.Image;
@@ -136,18 +142,29 @@ export function battle():
 
   const getT = () => Date.now() - delay - lastT;
 
-  let attacks: {
-    s: Phaser.GameObjects.Image;
-    destroy: boolean;
-    speed: number;
-    hyped: boolean;
-  }[];
+  type OpponentAttack =
+    | {
+        type: "bi";
+        s: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
+        speed: number;
+        angleSpeed: number;
+        hyped: boolean;
+      }
+    | {
+        type: "ice";
+        s: Phaser.GameObjects.Rectangle;
+      };
 
   let opponentAttacks: (
     | {
+        type: "bi";
         s: Phaser.GameObjects.Image;
         speed: number;
         angleSpeed: number;
+      }
+    | {
+        type: "ice";
+        s: Phaser.GameObjects.Rectangle;
       }
     | undefined
   )[];
@@ -202,7 +219,9 @@ export function battle():
       s: context.physics.add.image(x, y, "bi").setAngle(angle),
       speed: 4,
       angleSpeed,
-    };
+      hyped: false,
+      type: "bi",
+    } satisfies OpponentAttack;
 
     let found = false;
 
@@ -247,6 +266,21 @@ export function battle():
         s: context.add.sprite(x, yy, "lightning"),
       });
     }
+  }
+
+  function createIce() {
+    opponentAttacks.push({
+      type: "ice",
+      s: context.add
+        .rectangle(
+          playerBoundary.left,
+          playerBoundary.top,
+          playerBoundary.right - playerBoundary.left,
+          playerBoundary.bottom - playerBoundary.top
+        )
+        .setOrigin(0, 0)
+        .setFillStyle(0xccffcc, 0.4),
+    });
   }
 
   let keys: {
@@ -333,7 +367,6 @@ export function battle():
         };
       } else if (e.name === "silkeshäger") {
         attack = (enemy) => {
-
           if (enemy.status?.type === "confused") {
             turn.text = "Silkeshägern är förvirrad och träffar sig själv!";
             createLightning(enemy.s.x, enemy.s.y, true);
@@ -366,6 +399,7 @@ export function battle():
             enemies.forEach((e) => {
               e.health = Math.min(e.maxHealth, e.health + amount);
             });
+            createIce();
           }
         };
       }
@@ -458,6 +492,12 @@ export function battle():
 
           if (turn.index >= enemies.length || turn.index === -1) {
             turn = TURN_SELECT(level.battleData);
+            for (let i = 0; i < opponentAttacks.length; i++) {
+              if (opponentAttacks[i]?.type === 'ice') {
+                opponentAttacks[i]?.s.destroy();
+                opponentAttacks[i] = undefined;
+              }
+            }
             enemies.forEach((e) => {
               e.status = undefined;
             });
@@ -629,7 +669,12 @@ export function battle():
 
       for (let i = opponentAttacks.length - 1; i >= 0; i--) {
         const attack = opponentAttacks[i];
+
         if (!attack) {
+          continue;
+        }
+
+        if (attack.type === 'ice') {
           continue;
         }
 
@@ -696,7 +741,9 @@ export function battle():
       }
 
       if (!effects.some((x) => x.type === "lightning")) {
-        let acc = 0.5;
+        const onIce = opponentAttacks.some((x) => x?.type === 'ice');
+
+        let acc = onIce ? 0.1 : 0.5;
         let frictionX = true;
         let frictionY = true;
 
@@ -749,8 +796,8 @@ export function battle():
           player.ysp = 0;
         }
 
-        if (frictionX) player.xsp *= 0.8;
-        if (frictionY) player.ysp *= 0.8;
+        if (frictionX) player.xsp *= onIce ? 0.95 : 0.8;
+        if (frictionY) player.ysp *= onIce ? 0.95 : 0.8;
       }
 
       // effects
@@ -849,7 +896,7 @@ export function battle():
 
         if (
           animationTimer % 30 === i * (30 / enemies.length) &&
-          e.status?.type === "sleepy" 
+          e.status?.type === "sleepy"
         ) {
           createZ(e.s.x, e.s.y);
         }
@@ -904,24 +951,24 @@ export function battle():
             if (score > enemy.resistances[song.effect]) {
               enemy.status = {
                 type: song.effect,
-              }
+              };
 
-              let adj = '';
+              let adj = "";
 
-              if (song.effect === 'confused') {
-                adj = 'förvirrad'
-              } else if (song.effect === 'fearful') {
-                adj = 'rädd';
-              } else if (song.effect === 'hyped') {
-                adj = 'taggad';
-              } else if (song.effect === 'sleepy') {
-                adj = 'trött';
+              if (song.effect === "confused") {
+                adj = "förvirrad";
+              } else if (song.effect === "fearful") {
+                adj = "rädd";
+              } else if (song.effect === "hyped") {
+                adj = "taggad";
+              } else if (song.effect === "sleepy") {
+                adj = "trött";
               } else {
                 exhaust(song.effect);
-                adj = '???' + song.effect;
+                adj = "???" + song.effect;
               }
 
-              text += `${enemy.name} blev väldigt ${adj}\n`
+              text += `${enemy.name} blev väldigt ${adj}\n`;
             }
           }
 
@@ -1035,13 +1082,9 @@ export function battle():
           );
           enemy.animation.animationT += enemy.animation.animationSpeed;
 
-          if (
-            enemy.status?.type === "confused"
-          ) {
+          if (enemy.status?.type === "confused") {
             enemy.speed = anim(enemy.speed, 0.25);
-          } else if (
-            enemy.status?.type === "sleepy"
-          ) {
+          } else if (enemy.status?.type === "sleepy") {
             enemy.speed = anim(enemy.speed, 0);
           } else {
             enemy.speed = anim(enemy.speed, 1);
