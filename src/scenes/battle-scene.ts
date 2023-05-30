@@ -688,9 +688,9 @@ export function battle():
         playEffect.enemies.forEach((e, i) => {
           const enemy = enemies[i];
           if (song && score > enemy.resistances[song.effect]) {
-            e.setFrame(song.effect);
+            e.setFrame(getFrame(song.effect));
           } else {
-            e.setFrame(getFrame(song?.effect));
+            e.setFrame(0);
           }
         });
       }

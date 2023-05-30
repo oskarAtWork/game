@@ -1,6 +1,7 @@
 import { Boundary, centerX } from "./boundary";
 import { BirdNames } from "./dialog-person";
 import {Animation, animation_long_floaty} from './animations';
+import { exhaust } from "./helper";
 
 export type EffectType = 'sleepy' | 'fearful' | 'hyped' | 'confused';
 
@@ -44,37 +45,6 @@ export const braveBoundary = (): Boundary => ({
   bottom: 375,
 })
 
-export const ezEnemy = (name: BirdNames, maxHealth: number, nb = normalBoundary()): EnemyData => {
-  const x = centerX(nb)
-  const y = (nb.left + nb.right) / 2
-
-  return {
-    status: undefined,
-    name,
-    boundary: nb,
-    defaultBoundary: nb,
-    animation: {
-      from: animation_long_floaty,
-      to: undefined,
-      blendT: 0,
-      animationSpeed: 1,
-      animationT: 0,
-    },
-    hasEarMuffs: false,
-    maxHealth,
-    health: maxHealth,
-    speed: 1,
-    resistances: {
-      fearful: 0.5,
-      sleepy: 0.5,
-      hyped: 0.5,
-      confused: 0.5,
-    },
-    x,
-    y
-  }
-}
-
 export type EnemyData = {
   status: {
     type: EffectType;
@@ -106,6 +76,67 @@ export type Enemy = EnemyData & {
   }
   text: Phaser.GameObjects.Text;
   attack: (enemy: Enemy) => void;
+}
+
+export const ezEnemy = (name: BirdNames, maxHealth: number, nb = normalBoundary()): EnemyData => {
+  const x = centerX(nb)
+  const y = (nb.left + nb.right) / 2
+
+  let resistances: EnemyData['resistances'];
+
+  if (name === 'biatare') {
+    resistances = {
+      fearful: 0.6,
+      sleepy: 0.9,
+      hyped: 0.6,
+      confused: 0.6,
+    };
+  } else if (name === 'silkeshäger') {
+    resistances = {
+      fearful: 0.7,
+      sleepy: 0.5,
+      hyped: 0.6,
+      confused: 0.8,
+    };
+  } else if (name === 'tajga') {
+    resistances = {
+      fearful: 0.7,
+      sleepy: 0.5,
+      hyped: 0.6,
+      confused: 0.5,
+    };
+  } else {
+    exhaust(name);
+    window.alert(`Unknown bird name ${name}`)
+    resistances = {
+      fearful: 0,
+      sleepy: 0,
+      hyped: 0,
+      confused: 0,
+    }
+  }
+
+
+  return {
+    status: undefined,
+    name,
+    boundary: nb,
+    defaultBoundary: nb,
+    animation: {
+      from: animation_long_floaty,
+      to: undefined,
+      blendT: 0,
+      animationSpeed: 1,
+      animationT: 0,
+    },
+    hasEarMuffs: false,
+    maxHealth,
+    health: maxHealth,
+    speed: 1,
+    resistances,
+    x,
+    y
+  }
 }
 
 export function blendAnimation(animations: Enemy['animation']) {
