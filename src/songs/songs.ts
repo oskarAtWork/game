@@ -9,7 +9,7 @@ export const skaningen = (scene: Phaser.Scene, sheet: Sheet): Song =>
     {
       name: "skaningen",
       effect: 'fearful',
-      notes: "§2§1312423",
+      notes: "1312423512",
       timings: [
         1845, // first beat
         2153,
@@ -34,7 +34,7 @@ export const sovningen = (scene: Phaser.Scene, sheet: Sheet): Song =>
     {
       name: "sovningen",
       effect: 'sleepy',
-      notes: "§54312",
+      notes: "165421",
       timings: [2238, 4171, 6104, 6892, 7475, 8081],
       startsAt: 2238,
       endsAt: 10000,

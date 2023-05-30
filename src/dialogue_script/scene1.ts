@@ -16,7 +16,7 @@ const scene: Line[] = [
   }),
 
   oskar(
-    "Tryck G för att börja spela Sömnlåten.\nSer du notsystemet?\nTryck på rätt siffra när linjen passerar bollen. Grundton är §, sekund 1 osv", {
+    "Tryck G för att börja spela Sömnlåten.\nSer du notsystemet?\nTryck på rätt siffra när linjen passerar bollen. Grundton är 1, sekund 2 osv", {
       keyToContinue: 'G',
     }
   ),
