@@ -1,4 +1,6 @@
-const timings = [
+export type OpponentSong = [number, number][];
+
+export const baseTimings = [
   [6, 1000],
   [9, 1600],
   [8, 2200],
@@ -11,4 +13,4 @@ const timings = [
   [1, 8200],
   [1, 8799],
   [6, 9399],
-] as const;
+] satisfies OpponentSong;

@@ -4,6 +4,7 @@ import backgroundUrl from "../../assets/riddarborg_background.png";
 import { preloadPeople } from "../dialog-person";
 import knifeUrl from "../../assets/knife.png";
 import { preloadSongs } from "../preload/preload-song";
+import { OpponentSong, baseTimings } from "../new-songs/base";
 
 export const testSceneKey = "test-scene";
 
@@ -19,8 +20,8 @@ const anim = (from: number, to: number) => {
 
 const lines: number[] = [];
 
-for (let i = 0; i < 8; i++) {
-  lines.push(100 + i * 50);
+for (let i = 0; i < 13; i++) {
+  lines.push(100 + i * 30);
 }
 
 const knifeSongTimings = [2933, 3831, 4768, 5744, 6744, 7660, 8614];
@@ -107,7 +108,6 @@ export function testScene():
   type Turn =
     | {
         type: "opponent";
-        nrOfShots: number;
       }
     | {
         type: "player";
@@ -139,6 +139,8 @@ export function testScene():
     spread: number;
   };
 
+  let opponentSong: OpponentSong;
+
   const getT = () => Date.now() - delay - lastT;
 
   return {
@@ -153,6 +155,7 @@ export function testScene():
     create() {
       at = 0;
       attacks = [];
+      opponentSong = [];
       this.add.image(0, 0, "background").setOrigin(0, 0).setAlpha(0.5);
 
       for (const y of lines) {
@@ -199,18 +202,19 @@ export function testScene():
       at++;
 
       if (turn.type === "opponent") {
-        if (at % 20 === 0 && turn) {
-          let r = Math.floor(Math.random() * lines.length);
-          createAttack(this, lines[r]);
+        let now = getT();
 
-          r = Math.floor(Math.random() * lines.length);
-          createAttack(this, lines[r]);
-          r = Math.floor(Math.random() * lines.length);
-          createAttack(this, lines[r]);
-          turn.nrOfShots--;
+        console.htmlLog(now)
+
+        const toPlay = opponentSong.filter((x) => x[1] <= now);
+
+        opponentSong = opponentSong.filter((x) => x[1] > now);
+
+        for (const play of toPlay) {
+          createAttack(this, lines[lines.length - play[0]]);
         }
 
-        if (turn.nrOfShots <= 0) {
+        if (opponentSong.length === 0) {
           turn = {
             type: "player",
           };
@@ -222,12 +226,22 @@ export function testScene():
         if (turn.type === 'player') {
           turn = {
             type: "shoot",
+            nrOfShots: 3,
           }
           lastT = Date.now();
           this.sound.play("knifeSong");
         } else if (turn.type === 'shoot') {
           createPlayerAttack(this, lines[player.lineIndex]);
-          turn.numb
+          turn.nrOfShots--;
+          if (turn.nrOfShots <= 0) {
+            turn = {
+              type: "opponent",
+            }
+            this.sound.stopAll();
+            this.sound.play('baseAttackSong')
+            opponentSong = baseTimings.slice(0, baseTimings.length);
+            lastT = Date.now();
+          }
         }
       }
 
