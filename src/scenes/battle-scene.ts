@@ -45,6 +45,7 @@ import { preloadSongs } from "../preload/preload-song";
 import { Player, playerBoundary } from "../player";
 import { animBoundary, centerX, centerY } from "../boundary";
 import { exhaust } from "../helper";
+import { Bar, createBar, loadBar } from "../health-bar";
 
 const knifeSongTimings = [2933, 3831, 4768, 5744, 6744, 7660, 8614];
 const knifeSongEnd = 9000;
@@ -133,7 +134,11 @@ export function battle():
     container: Phaser.GameObjects.Container;
     skaningen: Phaser.GameObjects.Image;
     sovningen: Phaser.GameObjects.Image;
-    enemies: {y: number, s: Phaser.GameObjects.Image}[];
+    enemies: {
+      y: number,
+      s: Phaser.GameObjects.Image,
+      updateBar: Bar,
+    }[];
   };
 
   let turn: Turn;
@@ -590,28 +595,34 @@ export function battle():
         .setOrigin(0, 0),
     };
 
+    const container = context.add.container(0, 0).setAlpha(0);
+    const adamPlay1 = context.add.image(400, 400, "adam-play-1");
+    const adamPlay3 = context.add.image(400, 400, "adam-play-3");
+    container.add(adamPlay1);
+    container.add(adamPlay3);
+
     playEffect = {
-      container: context.add.container(0, 0).setAlpha(0),
-      skaningen: context.add.image(400, 400, "adam-play-1"),
-      sovningen: context.add.image(400, 400, "adam-play-3"),
+      container,
+      skaningen: adamPlay1,
+      sovningen: adamPlay3,
       enemies: enemies.map((e, i) => {
         const right = e.name === "silkeshäger";
+        const x = right ? 760 : 70;
+        const y = 250 + (right ? 0 : i * 100)
         const s = context.add
-          .sprite(right ? 760 : 70, 250 + (right ? 0 : i * 100), e.name)
+          .sprite(x, y, e.name)
           .setScale(2)
           .setAngle(right ? 20 : -20);
 
+        container.add(s);
+
         return {
           s,
-          y: s.y
+          y,
+          updateBar: createBar(context, container, x, y-100, 20, 70) 
         }
       }),
     };
-    playEffect.container.add(playEffect.skaningen);
-    playEffect.container.add(playEffect.sovningen);
-    playEffect.enemies.forEach((e) => {
-      playEffect.container.add(e.s);
-    });
 
     context.add.image(0, 0, "dialog").setOrigin(0, 0);
     for (let i = 0; i < player.health; i++) {
@@ -640,6 +651,7 @@ export function battle():
   return {
     key: battleSceneKey,
     preload() {
+      loadBar(this);
       preload(this);
       preloadSongs(this);
       preloadPeople(this);
@@ -734,14 +746,18 @@ export function battle():
 
         playEffect.container.y = -20 * (d / p);
         playEffect.container.setAlpha(
-          anim(playEffect.container.alpha, 0.1 + (0.9 * d) / p)
+          anim(playEffect.container.alpha, 1)
         );
 
         const score = scoreSong(playedNotes, song);
 
         playEffect.enemies.forEach((e, i) => {
           const enemy = enemies[i];
-          enemy.s.setPosition(enemy.s.x, enemy.y - wavey(animationTimer*2) * 120)
+          enemy.s.setPosition(enemy.s.x, enemy.y - wavey(animationTimer*2) * 120);
+
+          if (song) {
+            e.updateBar(score, enemy.resistances[song.effect], animationTimer);
+          }
 
           if (song && score > enemy.resistances[song.effect]) {
             e.s.setFrame(getFrame(song.effect));
@@ -751,6 +767,7 @@ export function battle():
         });
       }
 
+      // player movement
       if (!effects.some((x) => x.type === "lightning")) {
         const onIce = opponentAttacks.some((x) => x?.type === 'ice');
 

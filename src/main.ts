@@ -4,6 +4,7 @@ import 'phaser';
 import { battle } from './scenes/battle-scene';
 import { dialog } from './scenes/dialog-scene';
 import { getCurrentLevel } from './progression';
+import { testScene } from './scenes/test-scene';
 
 
 const GameConfig: Phaser.Types.Core.GameConfig = {
@@ -26,7 +27,7 @@ const GameConfig: Phaser.Types.Core.GameConfig = {
       debug: false, // Set to true for debugging purposes
     },
   },
-  backgroundColor: '#300000',
+  backgroundColor: '#ffffff',
   render: { pixelArt: false, antialias: true },
   scale: {
 
