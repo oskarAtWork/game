@@ -4,7 +4,7 @@ import backgroundUrl from "../../assets/riddarborg_background.png";
 import { preloadPeople } from "../dialog-person";
 import knifeUrl from "../../assets/knife.png";
 import { preloadSongs } from "../preload/preload-song";
-import { OpponentSong, baseTimings } from "../new-songs/base";
+import { OpponentSong, ba_attack_times, ko_attack_times, sh_attack_times, tb_attack_times } from "../new-songs/base";
 
 export const testSceneKey = "test-scene";
 
@@ -239,7 +239,12 @@ export function testScene():
             }
             this.sound.stopAll();
             this.sound.play('baseAttackSong')
-            opponentSong = baseTimings.slice(0, baseTimings.length);
+            opponentSong = [
+              ...sh_attack_times,
+              ...ko_attack_times,
+              ...ba_attack_times,
+              ...tb_attack_times
+            ]
             lastT = Date.now();
           }
         }
