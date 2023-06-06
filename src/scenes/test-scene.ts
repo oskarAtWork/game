@@ -20,7 +20,7 @@ const anim = (from: number, to: number) => {
 
 const lines: number[] = [];
 
-for (let i = 0; i < 13; i++) {
+for (let i = 12; i >= 0; i--) {
   lines.push(100 + i * 30);
 }
 
@@ -211,7 +211,7 @@ export function testScene():
         opponentSong = opponentSong.filter((x) => x[1] > now);
 
         for (const play of toPlay) {
-          createAttack(this, lines[lines.length - play[0]]);
+          createAttack(this, lines[play[0] % lines.length]);
         }
 
         if (opponentSong.length === 0) {
@@ -233,7 +233,7 @@ export function testScene():
         } else if (turn.type === 'shoot') {
           createPlayerAttack(this, lines[player.lineIndex]);
           turn.nrOfShots--;
-          if (turn.nrOfShots <= 0) {
+          if (turn.nrOfShots <= 0 || getT() > knifeSongEnd) {
             turn = {
               type: "opponent",
             }
@@ -286,7 +286,7 @@ export function testScene():
         }
 
         if (attack.type === "opponent") {
-          attack.s.x -= 5;
+          attack.s.x -= 10;
           if (attack.s.x < 0) {
             attack.s.destroy();
             attacks[i] = undefined;
@@ -305,11 +305,11 @@ export function testScene():
         player.s.y = anim(player.s.y, lines[player.lineIndex]);
 
         if (keys.up.isDown) {
-          player.lineIndex = Math.max(0, player.lineIndex - 1);
+          player.lineIndex = Math.max(0, player.lineIndex + 1);
           keys.up.isDown = false;
         }
         if (keys.down.isDown) {
-          player.lineIndex = Math.min(lines.length - 1, player.lineIndex + 1);
+          player.lineIndex = Math.min(lines.length - 1, player.lineIndex - 1);
           keys.down.isDown = false;
         }
       }
