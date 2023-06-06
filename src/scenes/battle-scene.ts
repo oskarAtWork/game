@@ -13,6 +13,10 @@ const anim = (from: number, to: number) => {
   return from * 0.95 + to * 0.05;
 };
 
+const wavey = (t: number) => {
+  return Math.sin(Phaser.Math.DEG_TO_RAD * t);
+}
+
 import {
   Enemy,
   blendAnimation,
@@ -129,7 +133,7 @@ export function battle():
     container: Phaser.GameObjects.Container;
     skaningen: Phaser.GameObjects.Image;
     sovningen: Phaser.GameObjects.Image;
-    enemies: Phaser.GameObjects.Image[];
+    enemies: {y: number, s: Phaser.GameObjects.Image}[];
   };
 
   let turn: Turn;
@@ -592,16 +596,21 @@ export function battle():
       sovningen: context.add.image(400, 400, "adam-play-3"),
       enemies: enemies.map((e, i) => {
         const right = e.name === "silkeshäger";
-        return context.add
+        const s = context.add
           .sprite(right ? 760 : 70, 250 + (right ? 0 : i * 100), e.name)
           .setScale(2)
           .setAngle(right ? 20 : -20);
+
+        return {
+          s,
+          y: s.y
+        }
       }),
     };
     playEffect.container.add(playEffect.skaningen);
     playEffect.container.add(playEffect.sovningen);
     playEffect.enemies.forEach((e) => {
-      playEffect.container.add(e);
+      playEffect.container.add(e.s);
     });
 
     context.add.image(0, 0, "dialog").setOrigin(0, 0);
@@ -732,10 +741,12 @@ export function battle():
 
         playEffect.enemies.forEach((e, i) => {
           const enemy = enemies[i];
+          enemy.s.setPosition(enemy.s.x, enemy.y - wavey(animationTimer*2) * 120)
+
           if (song && score > enemy.resistances[song.effect]) {
-            e.setFrame(getFrame(song.effect));
+            e.s.setFrame(getFrame(song.effect));
           } else {
-            e.setFrame(0);
+            e.s.setFrame(0);
           }
         });
       }
