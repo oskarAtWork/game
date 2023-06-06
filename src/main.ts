@@ -15,7 +15,7 @@ const GameConfig: Phaser.Types.Core.GameConfig = {
   height: 600,
   type: Phaser.AUTO,
   parent: 'app',
-  scene: getCurrentLevel().sceneKey === 'DialogScene' ? [dialog(), battle()] : [battle(), dialog()],
+  scene: testScene(), //getCurrentLevel().sceneKey === 'DialogScene' ? [dialog(), battle()] : [battle(), dialog()],
   input: {
     keyboard: true,
     mouse: true,
