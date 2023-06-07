@@ -15,12 +15,12 @@ document.getElementById("range")?.addEventListener("change", (ev) => {
 });
 
 const anim = (from: number, to: number) => {
-  return from * 0.7 + to * 0.3;
+  return from * 0.6 + to * 0.4;
 };
 
 const lines: number[] = [];
 
-for (let i = 12; i >= 0; i--) {
+for (let i = 7; i >= 0; i--) {
   lines.push(100 + i * 30);
 }
 
@@ -120,7 +120,6 @@ export function testScene():
   let turn: Turn;
 
   let player: Player;
-  let at: number;
 
   let keys: {
     left: Phaser.Input.Keyboard.Key;
@@ -153,7 +152,7 @@ export function testScene():
       this.load.image("background", backgroundUrl);
     },
     create() {
-      at = 0;
+
       attacks = [];
       opponentSong = [];
       this.add.image(0, 0, "background").setOrigin(0, 0).setAlpha(0.5);
@@ -199,7 +198,7 @@ export function testScene():
       };
     },
     update() {
-      at++;
+
 
       if (turn.type === "opponent") {
         let now = getT();
@@ -241,8 +240,8 @@ export function testScene():
             this.sound.play('baseAttackSong')
             opponentSong = [
               ...sh_attack_times,
-              ...ko_attack_times,
               ...ba_attack_times,
+              ...ko_attack_times,
               ...tb_attack_times
             ]
             lastT = Date.now();
@@ -302,14 +301,14 @@ export function testScene():
 
       //player stuff
       {
-        player.s.y = anim(player.s.y, lines[player.lineIndex]);
+        player.s.y = anim(player.s.y, lines[player.lineIndex] - 20);
 
         if (keys.up.isDown) {
-          player.lineIndex = Math.max(0, player.lineIndex + 1);
+          player.lineIndex = Math.min(lines.length - 1, player.lineIndex + 1);
           keys.up.isDown = false;
         }
         if (keys.down.isDown) {
-          player.lineIndex = Math.min(lines.length - 1, player.lineIndex - 1);
+          player.lineIndex = Math.max(0, player.lineIndex - 1);
           keys.down.isDown = false;
         }
       }
