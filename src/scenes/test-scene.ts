@@ -1,5 +1,5 @@
 import "phaser";
-import biUrl from "../../assets/bi.png";
+import singleNoteUrl from "../../assets/single_note.png";
 import backgroundUrl from "../../assets/riddarborg_background.png";
 import { preloadPeople } from "../dialog-person";
 import knifeUrl from "../../assets/knife.png";
@@ -21,7 +21,7 @@ const anim = (from: number, to: number) => {
 const lines: number[] = [];
 
 for (let i = 7; i >= 0; i--) {
-  lines.push(100 + i * 30);
+  lines.push(100 + i * 50);
 }
 
 const knifeSongTimings = [2933, 3831, 4768, 5744, 6744, 7660, 8614];
@@ -61,7 +61,7 @@ export function testScene():
   function createAttack(context: Phaser.Scene, y: number) {
     const obj = {
       type: "opponent",
-      s: context.physics.add.image(800, y, "bi"),
+      s: context.physics.add.image(800, y - 10, "singleNote").setScale(0.75),
     } satisfies Attack;
 
     let found = false;
@@ -82,7 +82,9 @@ export function testScene():
   function createPlayerAttack(context: Phaser.Scene, y: number) {
     const obj = {
       type: "player",
-      s: context.physics.add.image(player.s.x, y, "knife").setAngle(Math.random() * knifeState.spread),
+      s: context.physics.add.image(player.s.x, y, "knife").setRotation(
+        knifeState.angle + (Math.random() - 0.5) * knifeState.spread
+      ),
     } satisfies Attack;
 
     let found = false;
@@ -147,12 +149,11 @@ export function testScene():
     preload() {
       preloadPeople(this);
       preloadSongs(this);
-      this.load.image("bi", biUrl);
+      this.load.image("singleNote", singleNoteUrl);
       this.load.image("knife", knifeUrl);
       this.load.image("background", backgroundUrl);
     },
     create() {
-
       attacks = [];
       opponentSong = [];
       this.add.image(0, 0, "background").setOrigin(0, 0).setAlpha(0.5);
@@ -178,7 +179,7 @@ export function testScene():
       };
 
       player = {
-        s: this.physics.add.image(230, lines[3], "adam").setScale(0.25),
+        s: this.physics.add.image(230, lines[3], "adam").setScale(0.2),
         lineIndex: 3,
       };
 
@@ -198,12 +199,8 @@ export function testScene():
       };
     },
     update() {
-
-
       if (turn.type === "opponent") {
         let now = getT();
-
-        console.htmlLog(now)
 
         const toPlay = opponentSong.filter((x) => x[1] <= now);
 
@@ -291,8 +288,9 @@ export function testScene():
             attacks[i] = undefined;
           }
         } else {
-          attack.s.x += 5;
-          if (attack.s.x > 800) {
+          attack.s.x += Math.cos(attack.s.rotation) * 12;
+          attack.s.y += Math.sin(attack.s.rotation) * 12;
+          if (attack.s.x > 800 || attack.s.y > 600 || attack.s.y < 0) {
             attack.s.destroy();
             attacks[i] = undefined;
           }
@@ -301,7 +299,7 @@ export function testScene():
 
       //player stuff
       {
-        player.s.y = anim(player.s.y, lines[player.lineIndex] - 20);
+        player.s.y = anim(player.s.y, lines[player.lineIndex] - 14);
 
         if (keys.up.isDown) {
           player.lineIndex = Math.min(lines.length - 1, player.lineIndex + 1);
