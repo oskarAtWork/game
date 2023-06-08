@@ -22,12 +22,7 @@ ba_timestamps = get_note_timestamps('./assets/bird_attack_music/ba_attack.mid')
 tb_timestamps = get_note_timestamps('./assets/bird_attack_music/tb_attack.mid')
 ko_timestamps = get_note_timestamps('./assets/bird_attack_music/ko_attack.mid')
 
-sh_attack_times = []
-ba_attack_times = []
-tb_attack_times = []
-ko_attack_times = []
-
-name =""
+attack_times = []
 
 def toDiatonic(chromatic):
     """
@@ -63,32 +58,59 @@ def toDiatonic(chromatic):
     if chromatic == 12:
         return 8 #G
     
-    raise Exception(f"Oh no, {name} chromatic note {chromatic} outside bounds")
-
+    raise Exception(f"Oh no, chromatic note {chromatic} outside bounds")
 
 
 for note, timestamp in sh_timestamps:
-    name="sh"
-    sh_attack_times.append([toDiatonic(note-43), int(timestamp)])
+    attack_times.append({
+        "note": toDiatonic(note-43),
+        "ms": int(timestamp),
+        "bird": "silkeshäger"
+    })
 
 for note, timestamp in ba_timestamps:
-    name ="ba"
-    ba_attack_times.append([toDiatonic(note-55), int(timestamp)])
+    attack_times.append({
+        "note": toDiatonic(note-55),
+        "ms": int(timestamp),
+        "bird": "biatare"
+    })
 
 for note, timestamp in ko_timestamps:
-    name ="ko"
-    ko_attack_times.append([toDiatonic(note-67), int(timestamp)])
+    attack_times.append({
+        "note": toDiatonic(note-67),
+        "ms": int(timestamp),
+        "bird": "k?"
+    })
 
 for note, timestamp in tb_timestamps:
-    name="tb"
-    tb_attack_times.append([toDiatonic(note-67), int(timestamp)])
+    attack_times.append({
+        "note": toDiatonic(note-67),
+        "ms": int(timestamp),
+        "bird": "tajga"
+    })
 
-txt = f"""export type OpponentSong = [number, number][];
+def print_list(ls):
+    def print_entry(entry):
+        output = "{\n"
+        output += "\t\tnote: " + str(entry['note']) + ",\n"
+        output += "\t\tms: " + str(entry['ms']) + ",\n"
+        output += "\t\tbird: '" + str(entry['bird']) + "'\n"
+        output += "\t}"
+        return output
 
-export const sh_attack_times = {sh_attack_times} satisfies OpponentSong;
-export const ba_attack_times = {ba_attack_times} satisfies OpponentSong;
-export const ko_attack_times = {ko_attack_times} satisfies OpponentSong;
-export const tb_attack_times = {tb_attack_times} satisfies OpponentSong;
+
+    abc = [print_entry(x) for x in ls]
+
+    return "[" + ", ".join(abc) + "\n]"
+
+
+type = "{note: number, ms: number, bird: BirdType}"
+
+txt = f"""export type BirdType = 'biatare' | 'silkeshäger' | 'k?' | 'tajga';
+export type OpponentSong = {type}[];
+
+export const attack_times = {print_list(attack_times)} satisfies OpponentSong;
+
 """
 
 with open('./src/new-songs/base.ts', 'w') as f:

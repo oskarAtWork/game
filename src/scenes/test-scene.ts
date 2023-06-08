@@ -4,18 +4,27 @@ import backgroundUrl from "../../assets/riddarborg_background.png";
 import { preloadPeople } from "../dialog-person";
 import knifeUrl from "../../assets/knife.png";
 import { preloadSongs } from "../preload/preload-song";
-import { OpponentSong, ba_attack_times, ko_attack_times, sh_attack_times, tb_attack_times } from "../new-songs/base";
+import { BirdType, OpponentSong, attack_times } from "../new-songs/base";
 
 export const testSceneKey = "test-scene";
 
 let delay = 0;
 
+const MS_PER_FRAME = 1000 / 60;
+const BIRD_X = 700;
+const NOTE_SCALE = 0.75;
+const NOTE_SPEED = 10;
+
 document.getElementById("range")?.addEventListener("change", (ev) => {
   delay = Number.parseInt((ev.target as HTMLInputElement).value);
 });
 
-const anim = (from: number, to: number) => {
-  return from * 0.6 + to * 0.4;
+const anim = (from: number, to: number, tempo: "slow" | "fast" = "fast") => {
+  if (tempo === 'fast') {
+    return from * 0.6 + to * 0.4;
+  } else {
+    return from * 0.9 + to * 0.1;
+  }
 };
 
 const lines: number[] = [];
@@ -55,13 +64,15 @@ export function testScene():
         s: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
       };
 
+  let enemies: {s: Phaser.GameObjects.Sprite, y: number, startY: number, birdType: BirdType}[];
+
   let attacks: (Attack | undefined)[];
   let lastT: number;
 
-  function createAttack(context: Phaser.Scene, y: number) {
+  function createAttack(context: Phaser.Scene, x: number, y: number, image: string) {
     const obj = {
       type: "opponent",
-      s: context.physics.add.image(800, y - 10, "singleNote").setScale(0.75),
+      s: context.physics.add.image(x, y - 10, image).setScale(0),
     } satisfies Attack;
 
     let found = false;
@@ -153,7 +164,7 @@ export function testScene():
       this.load.image("knife", knifeUrl);
       this.load.image("background", backgroundUrl);
     },
-    create() {
+    create() {      
       attacks = [];
       opponentSong = [];
       this.add.image(0, 0, "background").setOrigin(0, 0).setAlpha(0.5);
@@ -197,52 +208,44 @@ export function testScene():
           .setStrokeStyle(3, 0xffffff)
           .setOrigin(0, 0),
       };
+
+      enemies = (['silkeshäger', 'biatare', 'tajga'] satisfies BirdType[]).map((x, i) => {
+        const y = lines[lines.length-2-(i*2)];
+        return {
+          s: this.add.sprite(BIRD_X, y, x).setScale(0.5).setFlipX(i > 0).setOrigin(0.5, 0.7),
+          birdType: x,
+          y,
+          startY: y,
+        }
+      });
     },
     update() {
       if (turn.type === "opponent") {
         let now = getT();
-
-        const toPlay = opponentSong.filter((x) => x[1] <= now);
-
-        opponentSong = opponentSong.filter((x) => x[1] > now);
+        const toPlay = opponentSong.filter((x) => x.ms <= now);
+        opponentSong = opponentSong.filter((x) => x.ms > now);
 
         for (const play of toPlay) {
-          createAttack(this, lines[play[0] % lines.length]);
+          const height = lines[play.note % lines.length];    
+          
+          const adjustment = NOTE_SPEED * ((play.ms - now) / MS_PER_FRAME);
+
+          createAttack(this, BIRD_X - adjustment, height, 'singleNote');
         }
+
+        enemies.forEach((e) => {
+          const play = opponentSong.find((f) => f.bird === e.birdType);
+          if (play) {
+            e.y = lines[play.note % lines.length];     
+          } else {
+            e.y = e.startY;
+          }
+        });
 
         if (opponentSong.length === 0) {
           turn = {
             type: "player",
           };
-        }
-      }
-
-      if (keys.space.isDown) {
-        keys.space.isDown = false;
-        if (turn.type === 'player') {
-          turn = {
-            type: "shoot",
-            nrOfShots: 3,
-          }
-          lastT = Date.now();
-          this.sound.play("knifeSong");
-        } else if (turn.type === 'shoot') {
-          createPlayerAttack(this, lines[player.lineIndex]);
-          turn.nrOfShots--;
-          if (turn.nrOfShots <= 0 || getT() > knifeSongEnd) {
-            turn = {
-              type: "opponent",
-            }
-            this.sound.stopAll();
-            this.sound.play('baseAttackSong')
-            opponentSong = [
-              ...sh_attack_times,
-              ...ba_attack_times,
-              ...ko_attack_times,
-              ...tb_attack_times
-            ]
-            lastT = Date.now();
-          }
         }
       }
 
@@ -275,6 +278,7 @@ export function testScene():
         );
       }
 
+      // move all attacks
       for (let i = 0; i < attacks.length; i++) {
         const attack = attacks[i];
         if (!attack) {
@@ -282,11 +286,12 @@ export function testScene():
         }
 
         if (attack.type === "opponent") {
-          attack.s.x -= 10;
+          attack.s.x -= NOTE_SPEED;
           if (attack.s.x < 0) {
             attack.s.destroy();
             attacks[i] = undefined;
           }
+          attack.s.scale = anim(attack.s.scale, NOTE_SCALE, 'slow');
         } else {
           attack.s.x += Math.cos(attack.s.rotation) * 12;
           attack.s.y += Math.sin(attack.s.rotation) * 12;
@@ -297,10 +302,14 @@ export function testScene():
         }
       }
 
-      //player stuff
-      {
-        player.s.y = anim(player.s.y, lines[player.lineIndex] - 14);
+      // animations
+      player.s.y = anim(player.s.y, lines[player.lineIndex] - 14);
+      for (const enemy of enemies) {
+        enemy.s.y = anim(enemy.s.y, enemy.y);
+      }
 
+      // keyboard
+      {
         if (keys.up.isDown) {
           player.lineIndex = Math.min(lines.length - 1, player.lineIndex + 1);
           keys.up.isDown = false;
@@ -308,6 +317,30 @@ export function testScene():
         if (keys.down.isDown) {
           player.lineIndex = Math.max(0, player.lineIndex - 1);
           keys.down.isDown = false;
+        }
+
+        if (keys.space.isDown) {
+          keys.space.isDown = false;
+          if (turn.type === 'player') {
+            turn = {
+              type: "shoot",
+              nrOfShots: 3,
+            }
+            lastT = Date.now();
+            this.sound.play("knifeSong");
+          } else if (turn.type === 'shoot') {
+            createPlayerAttack(this, lines[player.lineIndex]);
+            turn.nrOfShots--;
+            if (turn.nrOfShots <= 0 || getT() > knifeSongEnd) {
+              turn = {
+                type: "opponent",
+              }
+              this.sound.stopAll();
+              this.sound.play('baseAttackSong')
+              opponentSong = [...attack_times]
+              lastT = Date.now();
+            }
+          }
         }
       }
     },
