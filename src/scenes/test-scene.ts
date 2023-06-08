@@ -1,5 +1,6 @@
 import "phaser";
 import singleNoteUrl from "../../assets/single_note.png";
+import powUrl from "../../assets/pow.png";
 import backgroundUrl from "../../assets/riddarborg_background.png";
 import { preloadPeople } from "../dialog-person";
 import knifeUrl from "../../assets/knife.png";
@@ -19,12 +20,12 @@ document.getElementById("range")?.addEventListener("change", (ev) => {
   delay = Number.parseInt((ev.target as HTMLInputElement).value);
 });
 
-const anim = (from: number, to: number, tempo: "slow" | "fast" = "fast") => {
-  if (tempo === 'fast') {
-    return from * 0.6 + to * 0.4;
-  } else {
-    return from * 0.9 + to * 0.1;
-  }
+const slowAnim = (from: number, to: number) => {
+  return from * 0.9 + to * 0.1;
+};
+
+const anim = (from: number, to: number) => {
+  return from * 0.6 + to * 0.4;
 };
 
 const lines: number[] = [];
@@ -64,7 +65,7 @@ export function testScene():
         s: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
       };
 
-  let enemies: {s: Phaser.GameObjects.Sprite, y: number, startY: number, birdType: BirdType}[];
+  let enemies: {s: Phaser.GameObjects.Sprite, pow: Phaser.GameObjects.Image, y: number, startY: number, birdType: BirdType}[];
 
   let attacks: (Attack | undefined)[];
   let lastT: number;
@@ -161,6 +162,7 @@ export function testScene():
       preloadPeople(this);
       preloadSongs(this);
       this.load.image("singleNote", singleNoteUrl);
+      this.load.image("pow", powUrl);
       this.load.image("knife", knifeUrl);
       this.load.image("background", backgroundUrl);
     },
@@ -209,11 +211,12 @@ export function testScene():
           .setOrigin(0, 0),
       };
 
-      enemies = (['silkeshäger', 'biatare', 'tajga'] satisfies BirdType[]).map((x, i) => {
+      enemies = (['silkeshäger', 'biatare', 'tajga'] satisfies BirdType[]).map((birdType, i) => {
         const y = lines[lines.length-2-(i*2)];
         return {
-          s: this.add.sprite(BIRD_X, y, x).setScale(0.5).setFlipX(i > 0).setOrigin(0.5, 0.7),
-          birdType: x,
+          s: this.physics.add.sprite(BIRD_X, y, birdType).setScale(0.5).setFlipX(i > 0).setOrigin(0.5, 0.7),
+          pow: this.add.image(BIRD_X, y, 'pow').setAlpha(0),
+          birdType,
           y,
           startY: y,
         }
@@ -291,11 +294,18 @@ export function testScene():
             attack.s.destroy();
             attacks[i] = undefined;
           }
-          attack.s.scale = anim(attack.s.scale, NOTE_SCALE, 'slow');
+          attack.s.scale = slowAnim(attack.s.scale, NOTE_SCALE);
         } else {
           attack.s.x += Math.cos(attack.s.rotation) * 12;
           attack.s.y += Math.sin(attack.s.rotation) * 12;
-          if (attack.s.x > 800 || attack.s.y > 600 || attack.s.y < 0) {
+
+          const hitEnemies = enemies.filter((enemy) => this.physics.collide(attack.s, enemy.s));
+
+          for (let enemy of hitEnemies) {
+            enemy.pow.alpha = 1;
+          }
+
+          if (hitEnemies.length > 0 || attack.s.x > 800 || attack.s.y > 600 || attack.s.y < 0) {
             attack.s.destroy();
             attacks[i] = undefined;
           }
@@ -306,6 +316,7 @@ export function testScene():
       player.s.y = anim(player.s.y, lines[player.lineIndex] - 14);
       for (const enemy of enemies) {
         enemy.s.y = anim(enemy.s.y, enemy.y);
+        enemy.pow.alpha = slowAnim(enemy.pow.alpha, 0);
       }
 
       // keyboard
