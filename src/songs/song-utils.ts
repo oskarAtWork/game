@@ -44,7 +44,7 @@ export function createSong(internalSong: InternalSong, scene: Phaser.Scene, shee
       internalSong.timings[i]
     );
 
-    combined[i] = scene.add.image(x, y, 'note');
+    combined[i] = scene.add.image(x+7, y, 'singleNote');
     combined[i].alpha = 0.5;
   }
 
