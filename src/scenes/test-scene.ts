@@ -7,7 +7,7 @@ import { preloadPeople } from "../dialog-person";
 import knifeUrl from "../../assets/knife.png";
 import { preloadSongs } from "../preload/preload-song";
 import { BirdType, OpponentSong, attack_times } from "../new-songs/base";
-import { sovningen } from "../songs/songs";
+import { skaningen, sovningen } from "../songs/songs";
 import {
   Attack,
   Enemy,
@@ -403,6 +403,16 @@ export function testScene():
           if (turn.type === "player" && !turn.song) {
             lastT = Date.now();
             turn.song = sovningen(this, sheet);
+            this.sound.play(turn.song.name);
+          }
+        }
+
+        if (keys.D.isDown) {
+          keys.D.isDown = false;
+
+          if (turn.type === "player" && !turn.song) {
+            lastT = Date.now();
+            turn.song = skaningen(this, sheet);
             this.sound.play(turn.song.name);
           }
         }
