@@ -6,7 +6,7 @@ import backgroundUrl from "../../assets/riddarborg_background.png";
 import { preloadPeople } from "../dialog-person";
 import knifeUrl from "../../assets/knife.png";
 import { preloadSongs } from "../preload/preload-song";
-import { BirdType, OpponentSong, attack_times } from "../new-songs/base";
+import { OpponentSong, attack_times } from "../new-songs/base";
 import { skaningen, sovningen } from "../songs/songs";
 import {
   Attack,
@@ -19,6 +19,7 @@ import {
 } from "./types";
 import { Sheet, createSheet } from "../sheet";
 import { clearPlayedNotes, clearSong, playNote } from "../songs/song-utils";
+import { getCurrentLevel } from "../progression";
 
 export const testSceneKey = "test-scene";
 
@@ -144,6 +145,11 @@ export function testScene():
       this.load.image("sheet", sheetUrl);
     },
     create() {
+      const level = getCurrentLevel();
+      if (level.sceneKey !== 'BattleScene') {
+        throw Error('Tried to open test scene with Dialog scene stuff');
+      }
+
       lastT = Date.now();
       attacks = [];
       playedNotes = [];
@@ -216,18 +222,20 @@ export function testScene():
           .setOrigin(0, 0),
       };
 
-      enemies = (["silkeshäger", "biatare", "tajga"] satisfies BirdType[]).map(
-        (birdType, i) => {
-          const y = lines[lines.length - 2 - i * 3];
+      const nrOfEnemies = level.battleData.enemies.length;
+
+      enemies = level.battleData.enemies.map(
+        (enemyData, i) => {
+          const y = lines[lines.length - 1 - Math.floor(i * lines.length / nrOfEnemies)];
           return {
             s: this.physics.add
-              .sprite(BIRD_X, y, birdType)
-              .setScale(0.5)
-              .setFlipX(i > 0)
+              .sprite(BIRD_X, y, enemyData.name)
+              .setScale(0.4)
+              .setFlipX(enemyData.name !== 'silkeshäger')
               .setOrigin(0.5, 0.7),
             pow: this.add.image(BIRD_X, y, "pow").setAlpha(0),
-            birdType,
-            health: 10,
+            birdType: enemyData.name,
+            health: enemyData.health,
             y,
             startY: y,
           };

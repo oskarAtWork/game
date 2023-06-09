@@ -1,7 +1,6 @@
 import './style.css'
 
 import 'phaser';
-import { battle } from './scenes/battle-scene';
 import { dialog } from './scenes/dialog-scene';
 import { getCurrentLevel } from './progression';
 import { testScene } from './scenes/test-scene';
@@ -15,7 +14,7 @@ const GameConfig: Phaser.Types.Core.GameConfig = {
   height: 600,
   type: Phaser.AUTO,
   parent: 'app',
-  scene: testScene(), //getCurrentLevel().sceneKey === 'DialogScene' ? [dialog(), battle()] : [battle(), dialog()],
+  scene: getCurrentLevel().sceneKey === 'DialogScene' ? [dialog(), testScene()] : [testScene(), dialog()],
   input: {
     keyboard: true,
     mouse: true,

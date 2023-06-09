@@ -31,7 +31,6 @@ export type Level = {
 }
 
 export const levels: Level[] = [
-
   {
     sceneKey: 'DialogScene',
     dialog: scene1,
