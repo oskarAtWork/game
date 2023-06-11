@@ -62,5 +62,5 @@ export type Enemy = {
   y: number;
   startY: number;
   birdType: BirdType;
-  health: number;
+  health: Phaser.GameObjects.Image[];
 };

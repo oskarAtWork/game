@@ -1,5 +1,6 @@
 import "phaser";
 import singleNoteUrl from "../../assets/single_note.png";
+import heartUrl from "../../assets/heart.png";
 import sheetUrl from "../../assets/sheet.png";
 import powUrl from "../../assets/pow.png";
 import backgroundUrl from "../../assets/riddarborg_background.png";
@@ -143,6 +144,7 @@ export function testScene():
       this.load.image("knife", knifeUrl);
       this.load.image("background", backgroundUrl);
       this.load.image("sheet", sheetUrl);
+      this.load.image("health", heartUrl);
     },
     create() {
       const level = getCurrentLevel();
@@ -182,8 +184,11 @@ export function testScene():
       };
 
       this.input.keyboard!!.on("keydown", (ev: KeyboardEvent) => {
+        if (!isNoteKey(ev.key)) {
+          return;
+        }
 
-        if (isNoteKey(ev.key) && turn.type === 'player' && turn.song) {
+        if (turn.type === 'player' && turn.song) {
           const noteInfo = playNote(
             getT(),
             ev.key,
@@ -227,6 +232,7 @@ export function testScene():
       enemies = level.battleData.enemies.map(
         (enemyData, i) => {
           const y = lines[lines.length - 1 - Math.floor(i * lines.length / nrOfEnemies)];
+
           return {
             s: this.physics.add
               .sprite(BIRD_X, y, enemyData.name)
@@ -235,12 +241,24 @@ export function testScene():
               .setOrigin(0.5, 0.7),
             pow: this.add.image(BIRD_X, y, "pow").setAlpha(0),
             birdType: enemyData.name,
-            health: enemyData.health,
+            health: [],
             y,
             startY: y,
           };
         }
       );
+
+      enemies.forEach((enemy, i) => {
+        const amountOfHealth = level.battleData.enemies[i].health;
+        
+        for (let index = 0; index < amountOfHealth; index++) {
+          enemy.health.push(this.add.image(
+            enemy.s.x,
+            enemy.s.y,
+            'health'
+          ).setScale(0.6))
+        }
+      });
     },
     update() {
       if (turn.type === "opponent") {
@@ -326,16 +344,17 @@ export function testScene():
           let anyEnemyDied = false;
           for (let enemy of hitEnemies) {
             enemy.pow.alpha = 1;
-            enemy.health -= 1;
+            
+            enemy.health.pop()?.destroy();
 
-            if (enemy.health <= 0) {
+            if (enemy.health.length === 0) {
               anyEnemyDied = true;
             }
           }
 
           if (anyEnemyDied) {
             enemies = enemies.filter((enemy) => {
-              if (enemy.health <= 0) {
+              if (enemy.health.length === 0) {
                 enemy.pow.destroy();
                 enemy.s.destroy();
                 return false;
@@ -361,6 +380,25 @@ export function testScene():
       for (const enemy of enemies) {
         enemy.s.y = anim(enemy.s.y, enemy.y);
         enemy.pow.alpha = slowAnim(enemy.pow.alpha, 0);
+
+        if (enemy.health.length) {
+          const SPACING = 18;
+          const ITEMS_PER_ROW = 8;
+          const halfWidth = Math.floor(0.5 * SPACING * ITEMS_PER_ROW);
+
+          enemy.health.forEach((heart, i) => {
+            const i2 = i - ITEMS_PER_ROW;
+            heart.alpha = anim(heart.alpha, turn.type === 'opponent'  ? 0 : 1)
+
+            if (i2 < 0) {
+              heart.y = enemy.s.y - 70;
+              heart.x = enemy.s.x + i * SPACING - halfWidth;
+            } else {
+              heart.y = enemy.s.y - 50;
+              heart.x = enemy.s.x + i2 * SPACING - halfWidth;
+            }
+          });
+        }
       }
 
       sheet.s.alpha = anim(sheet.s.alpha, turn.type === 'player' && turn.song ? 1 : 0);

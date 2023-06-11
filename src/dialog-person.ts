@@ -39,7 +39,7 @@ export function preloadPeople(scene: Phaser.Scene) {
 }
 
 export type BirdNames = 'silkeshäger' | 'biatare' | 'tajga';
-export type Names = 'oskar' | 'molly' | 'adam' | 'klara' | BirdNames;
+export type Names = 'oskar' | 'molly' | 'adam' | 'klara' | 'svan' | BirdNames;
 
 export const xPosition = (name: Names): number => {
   switch (name) {

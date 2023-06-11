@@ -8,10 +8,11 @@ const speaker = (speaker: Line['speaker']) => (line: string, options?: {
 export const oskar = speaker('oskar');
 export const adam = speaker('adam');
 export const klara = speaker('klara');
+export const svan = speaker('svan');
 export const molly = speaker('molly');
 export const silkeshager = speaker('silkeshäger');
 export const biatare = speaker('biatare'); 
-export const tajgablastjart = speaker('tajgablåstjärt'); 
+export const tajgablastjart = speaker('tajga'); 
 export const blank = speaker(''); 
 
 export type EnterAction = {
