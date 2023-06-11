@@ -22,7 +22,10 @@ export type Turn =
   | {
       type: "shoot";
       nrOfShots: number;
-    };
+    }
+  | {
+    type: "win";
+  };
 
 export const allNotes = [
   '§', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'
@@ -39,6 +42,8 @@ export type Keys = {
   down: Phaser.Input.Keyboard.Key;
   G: Phaser.Input.Keyboard.Key;
   D: Phaser.Input.Keyboard.Key;
+  A: Phaser.Input.Keyboard.Key;
+  E: Phaser.Input.Keyboard.Key;
   space: Phaser.Input.Keyboard.Key;
 };
 
@@ -63,4 +68,5 @@ export type Enemy = {
   startY: number;
   birdType: BirdType;
   health: Phaser.GameObjects.Image[];
+  status: "" | "confused"
 };

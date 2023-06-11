@@ -68,7 +68,7 @@ export const levels: Level[] = [
   {
     sceneKey: 'BattleScene',
     battleData: {
-      enemies: [ezEnemy('tajga', 10, braveBoundary()), ezEnemy('biatare', 14, upperBoundary()), ezEnemy('silkeshäger', 14, lowerBoundary())],
+      enemies: [ezEnemy('tajga', 6, braveBoundary()), ezEnemy('biatare', 6, upperBoundary()), ezEnemy('silkeshäger', 6, lowerBoundary())],
       strings: ['G', 'D'],
     }
   },
