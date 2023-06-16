@@ -13,7 +13,8 @@ export const molly = speaker('molly');
 export const silkeshager = speaker('silkeshäger');
 export const biatare = speaker('biatare'); 
 export const tajgablastjart = speaker('tajga'); 
-export const blank = speaker(''); 
+export const blank = speaker('');
+export const spegel = speaker('spegel');
 
 export type EnterAction = {
   type: 'enter';

@@ -6,6 +6,8 @@ import scene1 from './dialogue_script/scene1';
 import scene2 from './dialogue_script/scene2';
 import scene3 from './dialogue_script/scene3';
 import scene4 from './dialogue_script/scene4';
+import scene5 from './dialogue_script/scene5';
+import finalScene from './dialogue_script/final_scene';
 
 import { EnemyData, braveBoundary, ezEnemy, lowerBoundary, upperBoundary } from "./enemy";
 
@@ -71,6 +73,16 @@ export const levels: Level[] = [
       enemies: [ezEnemy('tajga', 6, braveBoundary()), ezEnemy('biatare', 6, upperBoundary()), ezEnemy('silkeshäger', 6, lowerBoundary())],
       strings: ['G', 'D'],
     }
+  },
+  {
+    sceneKey: 'DialogScene',
+    dialog: scene5,
+    background: '/assets/forest_background.png',
+  },
+  {
+    sceneKey: 'DialogScene',
+    dialog: finalScene,
+    background: '/assets/mountain_bkg.png',
   },
 ]
 
