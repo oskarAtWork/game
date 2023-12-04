@@ -15,7 +15,7 @@ const anim = (from: number, to: number) => {
 
 const wavey = (t: number) => {
   return Math.sin(Phaser.Math.DEG_TO_RAD * t);
-}
+};
 
 import {
   Enemy,
@@ -115,7 +115,7 @@ export function battle():
     s: Phaser.GameObjects.Image;
     destroy: boolean;
     speed: number;
-    hyped: boolean,
+    hyped: boolean;
   }[];
   let sheet: Sheet;
   let line: {
@@ -135,9 +135,9 @@ export function battle():
     skaningen: Phaser.GameObjects.Image;
     sovningen: Phaser.GameObjects.Image;
     enemies: {
-      y: number,
-      s: Phaser.GameObjects.Image,
-      updateBar: Bar,
+      y: number;
+      s: Phaser.GameObjects.Image;
+      updateBar: Bar;
     }[];
   };
 
@@ -502,7 +502,7 @@ export function battle():
           if (turn.index >= enemies.length || turn.index === -1) {
             turn = TURN_SELECT(level.battleData);
             for (let i = 0; i < opponentAttacks.length; i++) {
-              if (opponentAttacks[i]?.type === 'ice') {
+              if (opponentAttacks[i]?.type === "ice") {
                 opponentAttacks[i]?.s.destroy();
                 opponentAttacks[i] = undefined;
               }
@@ -518,6 +518,7 @@ export function battle():
         return;
       }
 
+      // load song
       if (turn.type === "select") {
         if (key === "D" || key === "G") {
           context.sound.play(key === "D" ? "skaningen" : "sovningen");
@@ -608,7 +609,7 @@ export function battle():
       enemies: enemies.map((e, i) => {
         const right = e.name === "silkeshäger";
         const x = right ? 760 : 70;
-        const y = 250 + (right ? 0 : i * 100)
+        const y = 250 + (right ? 0 : i * 100);
         const s = context.add
           .sprite(x, y, e.name)
           .setScale(2)
@@ -619,8 +620,8 @@ export function battle():
         return {
           s,
           y,
-          updateBar: createBar(context, container, x, y-100, 20, 70) 
-        }
+          updateBar: createBar(context, container, x, y - 100, 20, 70),
+        };
       }),
     };
 
@@ -691,11 +692,7 @@ export function battle():
       for (let i = opponentAttacks.length - 1; i >= 0; i--) {
         const attack = opponentAttacks[i];
 
-        if (!attack) {
-          continue;
-        }
-
-        if (attack.type === 'ice') {
+        if (!attack || attack.type === "ice") {
           continue;
         }
 
@@ -745,15 +742,16 @@ export function battle():
         playEffect.skaningen.setVisible(song.name === "skaningen");
 
         playEffect.container.y = -20 * (d / p);
-        playEffect.container.setAlpha(
-          anim(playEffect.container.alpha, 1)
-        );
+        playEffect.container.setAlpha(anim(playEffect.container.alpha, 1));
 
         const score = scoreSong(playedNotes, song);
 
         playEffect.enemies.forEach((e, i) => {
           const enemy = enemies[i];
-          enemy.s.setPosition(enemy.s.x, enemy.y - wavey(animationTimer*2) * 120);
+          enemy.s.setPosition(
+            enemy.s.x,
+            enemy.y - wavey(animationTimer * 2) * 120
+          );
 
           if (song) {
             e.updateBar(score, enemy.resistances[song.effect], animationTimer);
@@ -769,7 +767,7 @@ export function battle():
 
       // player movement
       if (!effects.some((x) => x.type === "lightning")) {
-        const onIce = opponentAttacks.some((x) => x?.type === 'ice');
+        const onIce = opponentAttacks.some((x) => x?.type === "ice");
 
         let acc = onIce ? 0.1 : 0.5;
         let frictionX = true;
@@ -953,11 +951,7 @@ export function battle():
         }
       }
 
-      if (turn.type === "loose") {
-        gameOver.alpha = anim(gameOver.alpha, 1);
-      } else {
-        gameOver.alpha = anim(gameOver.alpha, 0);
-      }
+      gameOver.alpha = anim(gameOver.alpha, turn.type === "loose" ? 1 : 0);
 
       sheet.s.setVisible(turn.type === "play" && !!song);
 
@@ -1028,14 +1022,18 @@ export function battle():
       const dead = enemies.filter((e) => e.health <= 0);
 
       dead.forEach((enemy) => {
-        enemy.s.y += 10;
+        if (enemy.s.y < 100000) {
+          enemy.s.y += 10;
+        }
+
         enemy.s.flipY = true;
       });
 
+      // animations and win condition
       if (dead.length === enemies.length) {
         turn = {
           type: "win",
-          text: "Fågeln dog",
+          text: enemies.length > 1 ? "Fåglarna dog" : "Fågeln dog",
         };
       } else {
         for (let i = 0; i < enemies.length; i++) {
@@ -1091,22 +1089,22 @@ export function battle():
           enemy.x = anim(enemy.x, centerX(enemy.boundary));
           enemy.y = anim(enemy.y, centerY(enemy.boundary));
 
-          let target: number;
+          let animationSpeedTarget: number;
 
           switch (enemy.status?.type) {
             case "confused":
-              target = 0.25;
+              animationSpeedTarget = 0.25;
               break;
             case "sleepy":
-              target = 0.1;
+              animationSpeedTarget = 0.1;
               break;
             default:
-              target = 1;
+              animationSpeedTarget = 1;
           }
 
           enemy.animation.animationSpeed = anim(
             enemy.animation.animationSpeed,
-            target
+            animationSpeedTarget
           );
           enemy.animation.animationT += enemy.animation.animationSpeed;
 

@@ -1,11 +1,11 @@
 import { EffectType } from "../enemy";
 import { Sheet } from "../sheet";
 
-export type ViolinString = 'G' | 'D' | 'A' | 'E';
+export type ViolinString = "G" | "D" | "A" | "E";
 
-export const songNames = ['skaningen', 'sovningen', 'knifeSong'] as const;
+export const songNames = ["skaningen", "sovningen", "knifeSong"] as const;
 
-export type SongNames = typeof songNames[number];
+export type SongNames = (typeof songNames)[number];
 
 type InternalSong = {
   name: SongNames;
@@ -23,12 +23,16 @@ export type Song = {
   notes: Phaser.GameObjects.Image[];
   timings: number[];
   effect: EffectType;
-}
+};
 
-export function createSong(internalSong: InternalSong, scene: Phaser.Scene, sheet: Sheet): Song {
-  const notes = internalSong.notes.split('');
+export function createSong(
+  internalSong: InternalSong,
+  scene: Phaser.Scene,
+  sheet: Sheet
+): Song {
+  const notes = internalSong.notes.split("");
   if (notes.length !== internalSong.timings.length) {
-    const errorMessage =`notes length is ${notes.length} but timings length is ${internalSong.timings.length} for song ${internalSong.name}`;
+    const errorMessage = `notes length is ${notes.length} but timings length is ${internalSong.timings.length} for song ${internalSong.name}`;
     window.alert(errorMessage);
     throw Error(errorMessage);
   }
@@ -36,7 +40,7 @@ export function createSong(internalSong: InternalSong, scene: Phaser.Scene, shee
   const combined = Array<Phaser.GameObjects.Image>(notes.length);
 
   for (let i = 0; i < notes.length; i++) {
-    const {x, y} = getPosition(
+    const { x, y } = getPosition(
       sheet,
       internalSong.startsAt,
       internalSong.endsAt,
@@ -44,7 +48,12 @@ export function createSong(internalSong: InternalSong, scene: Phaser.Scene, shee
       internalSong.timings[i]
     );
 
-    combined[i] = scene.add.image(x+7, y, 'singleNote');
+    // Log the list of preloaded images to the console
+    scene.textures.each(function (image) {
+      console.log("Key:", image.key);
+    }, scene);
+
+    combined[i] = scene.add.image(x + 7, y, "note");
     combined[i].alpha = 0.5;
   }
 
@@ -58,31 +67,38 @@ export function createSong(internalSong: InternalSong, scene: Phaser.Scene, shee
   };
 }
 
-const getPosition = (sheet: Sheet, startsAt: number, endsAt: number, char: string, t: number) => {
+const getPosition = (
+  sheet: Sheet,
+  startsAt: number,
+  endsAt: number,
+  char: string,
+  t: number
+) => {
   const fraction = (t - startsAt) / (endsAt - startsAt);
   const x = sheet.innerX() + fraction * sheet.innerWidth();
 
   const ny = noteToY(char);
 
   if (ny === null) {
-    throw Error('not a note ->'  + char);
+    throw Error("not a note ->" + char);
   }
 
   const y = sheet.s.y + sheet.s.displayHeight - 30 + ny;
 
   return {
-    x, y
-  }
-}
+    x,
+    y,
+  };
+};
 
-const ALLOWED = '§1234567890';
-export const isAllowed = (x: string) => ALLOWED.includes(x); 
+const ALLOWED = "§1234567890";
+export const isAllowed = (x: string) => ALLOWED.includes(x);
 
 function noteToY(char: string) {
-  if (char === '§') {
+  if (char === "§") {
     return 0;
   } else if (isAllowed(char)) {
-    const code = char.charCodeAt(0) - '0'.charCodeAt(0);
+    const code = char.charCodeAt(0) - "0".charCodeAt(0);
     return code * -10;
   } else {
     return null;
@@ -91,16 +107,21 @@ function noteToY(char: string) {
 
 const MIN_DISTANCE = 100;
 
-export function playNote(t: number, char: string, song: Song | undefined, sheet: Sheet) {
-  if (!song || !isAllowed(char)) {
+export function playNote(
+  t: number,
+  char: string,
+  song: Song | undefined,
+  sheet: Sheet
+) {
+  if (!song || !isAllowed(char)) {
     return undefined;
   }
 
   const { x, y } = getPosition(sheet, song.startsAt, song.endsAt, char, t);
-  
+
   for (const note of song.notes) {
     if (distance(x, y, note) < MIN_DISTANCE) {
-      return {x, y, hit: true}
+      return { x, y, hit: true };
     }
   }
 
@@ -112,8 +133,7 @@ export function playNote(t: number, char: string, song: Song | undefined, sheet:
 }
 
 const distance = (x: number, y: number, note: Phaser.GameObjects.Image) =>
-  Math.pow(note.x - x, 2) + Math.pow(note.y - y, 2)
-
+  Math.pow(note.x - x, 2) + Math.pow(note.y - y, 2);
 
 export function clearPlayedNotes(
   playedNotes: { s: Phaser.GameObjects.Image; hit: boolean }[]
@@ -127,11 +147,13 @@ export function clearSong(song: Song) {
 }
 
 export function scoreSong(
-  playedNotes: {s: Phaser.GameObjects.Image, hit: boolean }[],
-  song: Song,
+  playedNotes: { s: Phaser.GameObjects.Image; hit: boolean }[],
+  song: Song
 ) {
   let score = 0;
-  const unused: Array<Phaser.GameObjects.Image | undefined> = Array.from(playedNotes.map((s) => s.s));
+  const unused: Array<Phaser.GameObjects.Image | undefined> = Array.from(
+    playedNotes.map((s) => s.s)
+  );
 
   for (const songNote of song.notes) {
     let distanceClosest = 999999;

@@ -12,11 +12,11 @@
             "scaleInEditor": 1
         },
         "tile-layout.tmx": {
-            "scale": 0.8634,
-            "selectedLayer": 0,
+            "scale": 0.7375,
+            "selectedLayer": 1,
             "viewCenter": {
-                "x": 493.3981931897152,
-                "y": 155.77947648830212
+                "x": 204.74576271186442,
+                "y": 105.08474576271186
             }
         }
     },
