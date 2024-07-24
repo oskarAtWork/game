@@ -989,6 +989,7 @@ export function battle():
               if (song.effect === "confused") {
                 adj = "förvirrad";
               } else if (song.effect === "fearful") {
+                enemy.health -= 1;
                 adj = "rädd";
               } else if (song.effect === "hyped") {
                 adj = "taggad";

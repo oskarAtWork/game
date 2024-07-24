@@ -9,7 +9,7 @@ import scene4 from "./dialogue_script/scene4";
 import scene5 from "./dialogue_script/scene5";
 import finalScene from "./dialogue_script/final_scene";
 
-import { EnemyData, braveBoundary, ezEnemy, lowerBoundary } from "./enemy";
+import { EnemyData, ezEnemy } from "./enemy";
 
 type SceneKey = typeof dialogSceneKey | typeof battleSceneKey;
 export type Scene = typeof scene1 | typeof scene2;
@@ -67,16 +67,6 @@ export const levels: Level[] = [
     sceneKey: "BattleScene",
     battleData: {
       enemies: [ezEnemy("biatare", 14)],
-      strings: ["G", "D"],
-    },
-  },
-  {
-    sceneKey: "BattleScene",
-    battleData: {
-      enemies: [
-        ezEnemy("tajga", 6, braveBoundary()),
-        ezEnemy("silkeshäger", 6, lowerBoundary()),
-      ],
       strings: ["G", "D"],
     },
   },
