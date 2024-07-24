@@ -399,12 +399,12 @@ export function battle():
       } else {
         //taiga
         attack = (enemy) => {
-          const amount = 3;
+          const amount = 2;
           if (enemy.status?.type === "confused") {
             turn.text = `Ge inte upp... Oj då!!, (+${amount} hp till dig)`;
             player.health = Math.min(player.maxHealth, player.health + amount);
           } else {
-            turn.text = `Ge inte upp!!! (+${amount} hp till alla fåglar)`;
+            turn.text = `Ge inte upp!!! (+${amount} hp till alla fåglar).\nIs-attack!`;
             enemies.forEach((e) => {
               e.health = Math.min(e.maxHealth, e.health + amount);
             });
@@ -948,6 +948,15 @@ export function battle():
 
           hasMoved = false;
           enemies[turn.index].attack(enemies[turn.index]);
+        }
+      }
+
+      if (turn.type === "loose") {
+        for (let i = 0; i < opponentAttacks.length; i++) {
+          if (opponentAttacks[i]?.type === "ice") {
+            opponentAttacks[i]?.s.destroy();
+            opponentAttacks[i] = undefined;
+          }
         }
       }
 

@@ -1,4 +1,7 @@
-import { pokemon } from "./scenes/pokemon-scene";
+import { getCurrentLevel } from "./progression";
+import { battle } from "./scenes/battle-scene";
+import { dialog } from "./scenes/dialog-scene";
+import { testScene } from "./scenes/test-scene";
 import "./style.css";
 
 import "phaser";
@@ -11,7 +14,10 @@ const GameConfig: Phaser.Types.Core.GameConfig = {
   height: 600,
   type: Phaser.AUTO,
   parent: "app",
-  scene: pokemon(),
+  scene:
+    getCurrentLevel().sceneKey === "DialogScene"
+      ? [dialog(), testScene(), battle()]
+      : [testScene(), dialog(), battle()],
 
   input: {
     keyboard: true,
@@ -34,16 +40,6 @@ const GameConfig: Phaser.Types.Core.GameConfig = {
     expandParent: false,
   },
 };
-
-/*
-import { dialog } from "./scenes/dialog-scene";
-import { getCurrentLevel } from "./progression";
-import { testScene } from "./scenes/test-scene";
-import { battle } from "./scenes/battle-scene";
-    getCurrentLevel().sceneKey === "DialogScene"
-      ? [dialog(), testScene(), battle()]
-      : [testScene(), dialog(), battle()],
-*/
 
 export class Game extends Phaser.Game {
   constructor(config: Phaser.Types.Core.GameConfig) {
