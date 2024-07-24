@@ -231,7 +231,7 @@ export function testScene():
 
         if (turn.type === "player" && turn.song) {
           const noteInfo = playNote(
-            getT() + (turn.song.name === "skaningen" ? 230 : 0),
+            getT() + (turn.song.name === "skaningen" ? 230 : 100),
             ev.key,
             turn.song,
             sheet
@@ -418,7 +418,7 @@ export function testScene():
           } else if (this.physics.collide(player.s, attack.s)) {
             attack.s.destroy();
             attacks[i] = undefined;
-            player.s.x -= 50;
+            player.s.x -= 20;
           }
         } else {
           attack.s.x += Math.cos(attack.s.rotation) * 12;
@@ -501,10 +501,26 @@ export function testScene():
 
       if (turn.type === "player" && turn.song && getT() > turn.song.endsAt) {
         if (scoreSong(playedNotes, turn.song) > 0.5) {
-          sleepy = true;
+          if (turn.song.name === "sovningen") {
+            sleepy = true;
+          }
+
           enemies.forEach((e) => {
             e.status = "";
           });
+
+          if (turn.song.name === "skaningen") {
+            enemies = enemies.filter((e) => {
+              e.health.pop()?.destroy();
+
+              if (e.health.length === 0) {
+                e.pow.destroy();
+                e.s.destroy();
+                return false;
+              }
+              return true;
+            });
+          }
         }
         clearPlayedNotes(playedNotes);
         clearSong(turn.song);
@@ -538,10 +554,14 @@ export function testScene():
           if (turn.type === "shoot") {
             createPlayerAttack(this, lines[player.lineIndex]);
             turn.nrOfShots--;
-            if (turn.nrOfShots <= 0 || getT() > knifeSongEnd) {
-              startOpponentTurn(this);
-            }
           }
+        }
+
+        if (
+          turn.type === "shoot" &&
+          (turn.nrOfShots <= 0 || getT() > knifeSongEnd)
+        ) {
+          startOpponentTurn(this);
         }
 
         if (keys.G.isDown) {
