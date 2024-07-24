@@ -10,8 +10,12 @@ import scene5 from "./dialogue_script/scene5";
 import finalScene from "./dialogue_script/final_scene";
 
 import { EnemyData, ezEnemy } from "./enemy";
+import { testSceneKey } from "./scenes/test-scene";
 
-type SceneKey = typeof dialogSceneKey | typeof battleSceneKey;
+type SceneKey =
+  | typeof dialogSceneKey
+  | typeof battleSceneKey
+  | typeof testSceneKey;
 export type Scene = typeof scene1 | typeof scene2;
 
 let x = window.location.pathname;
@@ -31,7 +35,7 @@ export type Level =
       background: string;
     }
   | {
-      sceneKey: typeof battleSceneKey;
+      sceneKey: typeof battleSceneKey | typeof testSceneKey;
       battleData: BattleData;
     };
 
@@ -74,6 +78,17 @@ export const levels: Level[] = [
     sceneKey: "DialogScene",
     dialog: scene5,
     background: "/assets/forest_background.png",
+  },
+  {
+    sceneKey: "TestScene",
+    battleData: {
+      enemies: [
+        ezEnemy("biatare", 6),
+        ezEnemy("silkeshäger", 6),
+        ezEnemy("tajga", 6),
+      ],
+      strings: ["D"],
+    },
   },
   {
     sceneKey: "DialogScene",

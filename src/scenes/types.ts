@@ -24,14 +24,25 @@ export type Turn =
       nrOfShots: number;
     }
   | {
-    type: "win";
-  };
+      type: "win";
+    };
 
 export const allNotes = [
-  '§', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'
+  "§",
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "0",
 ] as const;
 
-export const isNoteKey = (x: string): x is NoteKey => allNotes.includes(x as NoteKey); 
+export const isNoteKey = (x: string): x is NoteKey =>
+  allNotes.includes(x as NoteKey);
 
 export type NoteKey = (typeof allNotes)[number];
 
@@ -66,7 +77,7 @@ export type Enemy = {
   pow: Phaser.GameObjects.Image;
   y: number;
   startY: number;
-  birdType: BirdType;
+  birdType: BirdType | "svan";
   health: Phaser.GameObjects.Image[];
-  status: "" | "confused"
+  status: "" | "confused";
 };

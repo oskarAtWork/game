@@ -3,7 +3,9 @@ import singleNoteUrl from "../../assets/single_note.png";
 import heartUrl from "../../assets/heart.png";
 import sheetUrl from "../../assets/sheet.png";
 import powUrl from "../../assets/pow.png";
-import backgroundUrl from "../../assets/riddarborg_background.png";
+import svandamUrl from "../../assets/svandam.png";
+import backgroundUrl from "../../assets/sky-image.png";
+import gameOverUrl from "../../assets/game_over.png";
 import { preloadPeople } from "../dialog-person";
 import knifeUrl from "../../assets/knife.png";
 import { preloadSongs } from "../preload/preload-song";
@@ -28,7 +30,7 @@ import {
 import { getCurrentLevel, goToNextScene } from "../progression";
 import { ENEMY_FRAME_CONFUSED, ENEMY_FRAME_NORMAL } from "../enemy";
 
-export const testSceneKey = "test-scene";
+export const testSceneKey = "TestScene";
 
 let delay = 0;
 
@@ -131,6 +133,7 @@ export function testScene():
     }
   }
 
+  let gameOver: Phaser.GameObjects.Image;
   let attacks: (Attack | undefined)[];
   let lastT: number;
   let enemies: Enemy[];
@@ -163,6 +166,7 @@ export function testScene():
     key: testSceneKey,
     preload() {
       preloadPeople(this);
+      this.load.image("svandam", svandamUrl);
       preloadSongs(this);
       this.load.image("singleNote", singleNoteUrl);
       this.load.image("note", singleNoteUrl);
@@ -171,19 +175,26 @@ export function testScene():
       this.load.image("background", backgroundUrl);
       this.load.image("sheet", sheetUrl);
       this.load.image("health", heartUrl);
+      this.load.image("game_over", gameOverUrl);
     },
     create() {
       sleepy = false;
       const level = getCurrentLevel();
-      if (level.sceneKey !== "BattleScene") {
-        throw Error("Tried to open test scene with Dialog scene stuff");
+      if (level.sceneKey !== "TestScene") {
+        throw Error(
+          `Tried to open test scene with ${level.sceneKey} scene stuff`
+        );
       }
 
       lastT = Date.now();
       attacks = [];
       playedNotes = [];
       opponentSong = [];
-      this.add.image(0, 0, "background").setOrigin(0, 0).setAlpha(0.5);
+      this.add
+        .image(0, 0, "background")
+        .setOrigin(0, 0)
+        .setAlpha(0.5)
+        .setScale(2);
 
       turn = {
         type: "player",
@@ -219,7 +230,12 @@ export function testScene():
         }
 
         if (turn.type === "player" && turn.song) {
-          const noteInfo = playNote(getT(), ev.key, turn.song, sheet);
+          const noteInfo = playNote(
+            getT() + (turn.song.name === "skaningen" ? 230 : 0),
+            ev.key,
+            turn.song,
+            sheet
+          );
 
           if (noteInfo) {
             const note = {
@@ -232,7 +248,7 @@ export function testScene():
       });
 
       player = {
-        s: this.physics.add.image(230, lines[3], "adam").setScale(0.2),
+        s: this.physics.add.image(230, lines[3], "svandam").setScale(0.2),
         lineIndex: 3,
       };
 
@@ -292,6 +308,8 @@ export function testScene():
       });
 
       text.setOrigin(0.5, 0);
+
+      gameOver = this.add.image(0, 0, "game_over").setOrigin(0, 0).setAlpha(0);
     },
     update() {
       if (turn.type === "opponent") {
@@ -338,7 +356,11 @@ export function testScene():
       if (turn.type === "player" && !turn.song) {
         text.text = "Press G or D";
       } else {
-        text.text = "Hello";
+        text.text = "";
+      }
+
+      if (player.s.x < 0) {
+        gameOver.setAlpha(gameOver.alpha * 0.1 + 0.9);
       }
 
       if (enemies.length === 0) {

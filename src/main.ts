@@ -1,6 +1,7 @@
 import { getCurrentLevel } from "./progression";
 import { battle } from "./scenes/battle-scene";
 import { dialog } from "./scenes/dialog-scene";
+import { testScene } from "./scenes/test-scene";
 import "./style.css";
 
 import "phaser";
@@ -15,8 +16,10 @@ const GameConfig: Phaser.Types.Core.GameConfig = {
   parent: "app",
   scene:
     getCurrentLevel().sceneKey === "DialogScene"
-      ? [dialog(), battle()]
-      : [battle(), dialog()],
+      ? [dialog(), battle(), testScene()]
+      : getCurrentLevel().sceneKey === "BattleScene"
+      ? [battle(), dialog(), testScene()]
+      : [testScene(), dialog(), battle()],
 
   input: {
     keyboard: true,
