@@ -9,6 +9,7 @@ import biatareUrl from '../assets/biatare_sheet.png';
 import tajgaUrl from '../assets/tajgablastjart_sheet.png';
 import silkäsHägerUrl from '../assets/silkeshager_sheet.png';
 import klaraUrl from '../assets/klara.png';
+import spegelUrl from '../assets/spegel.png';
 import { EnterAction } from './dialogue_script/scene-utils';
 import { exhaust } from './helper';
 
@@ -26,6 +27,7 @@ export function preloadPeople(scene: Phaser.Scene) {
   scene.load.image('adam', adamUrl);
   scene.load.image('molly', mollyUrl);
   scene.load.image('oskar', oskarUrl);
+  scene.load.image('spegel', spegelUrl);
   
   scene.load.spritesheet('silkeshäger', silkäsHägerUrl, { frameWidth: 200, frameHeight: 200});
   scene.load.spritesheet('tajga', tajgaUrl, { frameWidth: 200, frameHeight: 200});
@@ -39,7 +41,7 @@ export function preloadPeople(scene: Phaser.Scene) {
 }
 
 export type BirdNames = 'silkeshäger' | 'biatare' | 'tajga';
-export type Names = 'oskar' | 'molly' | 'adam' | 'klara' | 'svan' | BirdNames;
+export type Names = 'oskar' | 'molly' | 'adam' | 'klara' | 'svan' | 'spegel' | BirdNames;
 
 export const xPosition = (name: Names): number => {
   switch (name) {
@@ -55,9 +57,13 @@ export const xPosition = (name: Names): number => {
     case 'klara':
       return 600;
 
+    case 'spegel':
+      return 400;
+
     case 'silkeshäger':
     case 'biatare':
     case 'tajga':
+    case 'svan':
       return 500;
   
     default:
