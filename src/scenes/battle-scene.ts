@@ -101,7 +101,9 @@ const TURN_SELECT = (bd: BattleData) =>
 
 export const battleSceneKey = "BattleScene" as const;
 
-let delay = 0;
+let delay = Number.parseInt(
+  (document.getElementById("range") as HTMLInputElement).value
+);
 
 document.getElementById("range")?.addEventListener("change", (ev) => {
   delay = Number.parseInt((ev.target as HTMLInputElement).value);

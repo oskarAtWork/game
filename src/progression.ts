@@ -67,7 +67,7 @@ export const levels: Level[] = [
     sceneKey: "BattleScene",
     battleData: {
       enemies: [ezEnemy("biatare", 14)],
-      strings: ["G", "D"],
+      strings: ["D"],
     },
   },
   {
@@ -88,7 +88,7 @@ export function goToNextScene(scene: { start: (key: SceneKey) => void }) {
   currentLevel += 1;
 
   if (currentLevel >= levels.length) {
-    window.alert("No more rooms");
+    window.alert("Det var allt, gott folk, hejdå");
     return false;
   }
 

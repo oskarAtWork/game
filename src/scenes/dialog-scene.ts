@@ -13,7 +13,12 @@ import {
 } from "../dialog-person";
 import { animation_weave } from "../animations";
 import { skaningen, sovningen } from "../songs/songs";
-import { Song, clearPlayedNotes, playNote, scoreSong } from "../songs/song-utils";
+import {
+  Song,
+  clearPlayedNotes,
+  playNote,
+  scoreSong,
+} from "../songs/song-utils";
 import { Sheet, createSheet } from "../sheet";
 import { animationRecording } from "../animation-recording";
 import { preload } from "../preload/preload";
@@ -29,14 +34,13 @@ type LearnState = {
   currentNoteIndex: number;
   song: Song;
   playedNotes: { s: Phaser.GameObjects.Image; hit: boolean }[];
-  state?: 'failed' | 'passed' | 'playing';
+  state?: "failed" | "passed" | "playing";
 };
 
 let delay = 0;
 
 document.getElementById("range")?.addEventListener("change", (ev) => {
   delay = Number.parseInt((ev.target as HTMLInputElement).value);
-  console.htmlLog(delay)
 });
 
 animationRecording();
@@ -66,6 +70,10 @@ export function dialog():
         } else if (from === "left" || from === "right") {
           person.target_x = xPosition(line.speaker);
         }
+      }
+
+      if (otherAction?.type === "move") {
+        person.target_x = person.target_x + 39;
       }
 
       if (otherAction?.type === "exit") {
@@ -113,7 +121,7 @@ export function dialog():
       clearPlayedNotes(learnState.playedNotes);
       context.sound.play(learnState.song.name);
       lastT = Date.now();
-      learnState.state = 'playing';
+      learnState.state = "playing";
     }
   };
 
@@ -170,7 +178,7 @@ export function dialog():
       this.input.keyboard!!.on("keydown", function (ev: KeyboardEvent) {
         ev.preventDefault();
 
-        if (learnState?.state === 'playing') {
+        if (learnState?.state === "playing") {
           const now = getT();
           const noteInfo = playNote(
             now,
@@ -193,9 +201,14 @@ export function dialog():
 
         const resp = scene[currentLineIndex].response;
 
-        if (ev.key.toUpperCase() === (scene[currentLineIndex].keyToContinue?.toUpperCase() ?? " ") && !resp) {
-          if (learnState?.state !== 'failed') {
-            const isAnswer = scene[currentLineIndex - 1]?.response?.correctIndex;
+        if (
+          ev.key.toUpperCase() ===
+            (scene[currentLineIndex].keyToContinue?.toUpperCase() ?? " ") &&
+          !resp
+        ) {
+          if (learnState?.state !== "failed") {
+            const isAnswer =
+              scene[currentLineIndex - 1]?.response?.correctIndex;
 
             currentLineIndex += isAnswer ? 2 : 1;
             switched = true;
@@ -205,7 +218,10 @@ export function dialog():
         if (resp?.options) {
           for (let i = 0; i < resp.options.length; i++) {
             if (ev.key === (i + 1).toString()) {
-              if (i === resp.correctIndex || typeof resp.correctIndex === 'undefined') {
+              if (
+                i === resp.correctIndex ||
+                typeof resp.correctIndex === "undefined"
+              ) {
                 currentLineIndex += 1;
                 switched = true;
               } else {
@@ -217,7 +233,10 @@ export function dialog():
         }
 
         if (ev.key === "Backspace") {
-          if (learnState?.state === 'failed' || learnState?.state === 'passed') {
+          if (
+            learnState?.state === "failed" ||
+            learnState?.state === "passed"
+          ) {
             switched = true;
           } else if (okToBack(scene, currentLineIndex)) {
             currentLineIndex -= 1;
@@ -259,16 +278,16 @@ export function dialog():
             ((timeSinceStart - learnState.song.startsAt) /
               (learnState.song.endsAt - learnState.song.startsAt));
 
-        learnState.line.s.setVisible(learnState.state === 'playing');
+        learnState.line.s.setVisible(learnState.state === "playing");
 
         if (timeSinceStart > learnState.song.endsAt) {
           const score = scoreSong(learnState.playedNotes, learnState.song);
 
           if (score < 0.5) {
-            clearPlayedNotes(learnState.playedNotes)
-            learnState.state = 'failed';
+            clearPlayedNotes(learnState.playedNotes);
+            learnState.state = "failed";
           } else {
-            learnState.state = 'passed';
+            learnState.state = "passed";
           }
         }
       }
@@ -295,14 +314,17 @@ export function dialog():
           });
 
           currentDialog.text = txt;
-        } else if (currentLine.otherAction?.type === 'play' && learnState) {
-
-          if (learnState.state === 'failed') {
-            currentDialog.text = currentLine.otherAction.failMessage + '\n[backspace] För att testa igen'
-          } else if (learnState.state === 'passed') {
-            currentDialog.text = currentLine.otherAction.successMessage + '\n[space] För att fortsätta\n[backspace] För att testa igen'
-          } else if (learnState.state === 'playing') {
-            currentDialog.text = 'Play with §1234567890';
+        } else if (currentLine.otherAction?.type === "play" && learnState) {
+          if (learnState.state === "failed") {
+            currentDialog.text =
+              currentLine.otherAction.failMessage +
+              "\n[backspace] För att testa igen";
+          } else if (learnState.state === "passed") {
+            currentDialog.text =
+              currentLine.otherAction.successMessage +
+              "\n[space] För att fortsätta\n[backspace] För att testa igen";
+          } else if (learnState.state === "playing") {
+            currentDialog.text = "Play with §1234567890";
           }
         } else {
           currentDialog.text = currentLine.line;
